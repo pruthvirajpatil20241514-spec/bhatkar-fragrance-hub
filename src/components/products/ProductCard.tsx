@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 import { formatPrice, cn } from "@/lib/utils";
 
 interface ProductCardProps {
@@ -15,8 +16,10 @@ interface ProductCardProps {
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const { addItem } = useCart();
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const isWishlisted = isInWishlist(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -33,6 +36,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
       className="group"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={() => setIsMobileExpanded(!isMobileExpanded)}
     >
       <Link to={`/product/${product.id}`} className="block">
         <div className="relative overflow-hidden rounded-lg bg-card shadow-soft transition-shadow duration-300 group-hover:shadow-medium">
@@ -82,7 +86,11 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setIsWishlisted(!isWishlisted);
+                if (isWishlisted) {
+                  removeFromWishlist(product.id);
+                } else {
+                  addToWishlist(product);
+                }
               }}
             >
               <Heart
@@ -151,6 +159,34 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                   {size.ml}ml
                 </span>
               ))}
+            </div>
+
+            {/* Mobile Quick Action Buttons */}
+            <div className="flex gap-2 mt-4 md:hidden">
+              <Button 
+                size="sm" 
+                className="flex-1 h-8 text-xs"
+                onClick={handleAddToCart}
+              >
+                <ShoppingBag className="h-3 w-3 mr-1" />
+                Add
+              </Button>
+              <Button 
+                size="sm"
+                variant={isWishlisted ? "default" : "outline"}
+                className="h-8 w-8 p-0"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (isWishlisted) {
+                    removeFromWishlist(product.id);
+                  } else {
+                    addToWishlist(product);
+                  }
+                }}
+              >
+                <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
+              </Button>
             </div>
           </div>
         </div>

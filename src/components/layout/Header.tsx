@@ -1,22 +1,28 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, Search, Menu, X, Heart, User } from "lucide-react";
+import { ShoppingBag, Menu, X, Heart, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SearchBar } from "@/components/SearchBar";
+import { AuthModal } from "@/components/auth/AuthModal";
+import { ProfileMenu } from "@/components/auth/ProfileMenu";
 import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
-  { href: "/collections", label: "Collections" },
   { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
 ];
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const { toggleCart, totalItems } = useCart();
+  const { items: wishlistItems } = useWishlist();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
 
   return (
@@ -76,15 +82,46 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="hidden md:flex" aria-label="Search">
-            <Search className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="hidden md:flex" aria-label="Wishlist">
+          <SearchBar />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="hidden md:flex relative"
+            onClick={() => window.location.href = '/wishlist'}
+            aria-label="Wishlist"
+          >
             <Heart className="h-5 w-5" />
+            {wishlistItems.length > 0 && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-medium text-destructive-foreground"
+              >
+                {wishlistItems.length}
+              </motion.span>
+            )}
           </Button>
-          <Button variant="ghost" size="icon" className="hidden md:flex" aria-label="Account">
-            <User className="h-5 w-5" />
-          </Button>
+          
+          {/* Profile / Auth Button */}
+          <div className="hidden md:flex relative">
+            {isAuthenticated ? (
+              <ProfileMenu />
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setIsAuthModalOpen(true)}
+                aria-label="Account"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            )}
+            {/* Auth Modal Dropdown */}
+            {!isAuthenticated && isAuthModalOpen && (
+              <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+            )}
+          </div>
+
           <Button
             variant="ghost"
             size="icon"
@@ -139,13 +176,28 @@ export function Header() {
                 </motion.div>
               ))}
               <div className="flex items-center space-x-4 pt-4 border-t border-border">
-                <Button variant="ghost" size="icon">
-                  <Search className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon">
+                <SearchBar />
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    window.location.href = '/wishlist';
+                  }}
+                  className="relative"
+                >
                   <Heart className="h-5 w-5" />
+                  {wishlistItems.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-medium text-destructive-foreground">
+                      {wishlistItems.length}
+                    </span>
+                  )}
                 </Button>
-                <Button variant="ghost" size="icon">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setIsAuthModalOpen(true)}
+                >
                   <User className="h-5 w-5" />
                 </Button>
               </div>
