@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, LogOut, FileText } from "lucide-react";
+import { User, LogOut, FileText, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function ProfileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -23,6 +24,11 @@ export function ProfileMenu() {
 
   const handleLogout = () => {
     logout();
+    setIsOpen(false);
+  };
+
+  const handleManageClick = () => {
+    navigate("/admin/dashboard");
     setIsOpen(false);
   };
 
@@ -55,10 +61,27 @@ export function ProfileMenu() {
             <div className="px-4 py-3 border-b border-border bg-muted/50">
               <p className="text-sm font-semibold text-foreground">{user.name}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              {isAdmin && (
+                <p className="text-xs font-semibold text-primary mt-1">👑 Admin</p>
+              )}
             </div>
 
             {/* Menu Items */}
             <div className="py-2">
+              {/* Admin Dashboard Option */}
+              {isAdmin && (
+                <>
+                  <button
+                    onClick={handleManageClick}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-primary hover:bg-primary/10 transition-colors font-medium"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Manage Admin Panel
+                  </button>
+                  <div className="border-b border-border my-1" />
+                </>
+              )}
+
               <Link
                 to="/account"
                 onClick={() => setIsOpen(false)}

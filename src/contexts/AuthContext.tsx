@@ -1,9 +1,12 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
 
+export type UserRole = "admin" | "customer";
+
 export interface User {
   id: string;
   email: string;
   name: string;
+  role: UserRole;
   phone?: string;
   address?: string;
 }
@@ -17,6 +20,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
   getToken: () => string | null;
@@ -62,10 +66,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Password must be at least 6 characters");
       }
 
+      // Admin credentials check
+      const isAdmin = credentials.email === "admin@bhatkar.com" && credentials.password === "admin123";
+
       const mockUser: User = {
         id: "user_" + Math.random().toString(36).substr(2, 9),
         email: credentials.email,
         name: credentials.email.split("@")[0],
+        role: isAdmin ? "admin" : "customer",
         phone: "+91 98765 43210",
       };
 
@@ -96,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
+        isAdmin: user?.role === "admin",
         login,
         logout,
         getToken,
