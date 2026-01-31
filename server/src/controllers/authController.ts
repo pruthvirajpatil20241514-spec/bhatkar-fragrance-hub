@@ -1,21 +1,34 @@
 import { Response } from 'express';
 import pool from '../config/database.js';
-import { hashPassword, comparePassword, generateAccessToken, generateRefreshToken } from '../utils/auth.js';
+import {
+  hashPassword,
+  comparePassword,
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from '../utils/auth.js';
 import { AuthRequest } from '../middleware/auth.js';
-import { ValidationError, AuthenticationError, ConflictError } from '../utils/errors.js';
+import {
+  ValidationError,
+  AuthenticationError,
+  ConflictError,
+} from '../utils/errors.js';
 
-// User Registration
+/* ============================================================================
+   USER REGISTRATION
+============================================================================ */
+
 export const registerUser = async (req: AuthRequest, res: Response) => {
   const { email, password, firstName, lastName } = req.body;
 
-  // Validation
   if (!email || !password || !firstName || !lastName) {
-    throw new ValidationError('Email, password, first name, and last name are required');
+    throw new ValidationError(
+      'Email, password, first name, and last name are required'
+    );
   }
 
   const connection = await pool.getConnection();
   try {
-    // Check if user already exists
     const [existingUsers] = await connection.execute(
       'SELECT id FROM users WHERE email = ?',
       [email]
@@ -25,7 +38,7 @@ export const registerUser = async (req: AuthRequest, res: Response) => {
       throw new ConflictError('Email already registered');
     }
 
-    // Hash password
+    // Hash password (bcrypt)
     const passwordHash = await hashPassword(password);
 
     // Insert user
@@ -37,7 +50,7 @@ export const registerUser = async (req: AuthRequest, res: Response) => {
 
     const userId = (result as any).insertId;
 
-    // Generate tokens
+    // Generate JWT tokens
     const accessToken = generateAccessToken(userId, email, 'customer');
     const refreshToken = generateRefreshToken(userId, email, 'customer');
 
@@ -45,10 +58,13 @@ export const registerUser = async (req: AuthRequest, res: Response) => {
       success: true,
       message: 'User registered successfully',
       data: {
-        userId,
-        email,
-        firstName,
-        lastName,
+        user: {
+          id: userId,
+          email,
+          firstName,
+          lastName,
+          role: 'customer',
+        },
         accessToken,
         refreshToken,
       },
@@ -58,7 +74,10 @@ export const registerUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// User Login
+/* ============================================================================
+   USER LOGIN
+============================================================================ */
+
 export const loginUser = async (req: AuthRequest, res: Response) => {
   const { email, password } = req.body;
 
@@ -69,7 +88,9 @@ export const loginUser = async (req: AuthRequest, res: Response) => {
   const connection = await pool.getConnection();
   try {
     const [users] = await connection.execute(
-      'SELECT id, email, password_hash, first_name, last_name FROM users WHERE email = ? AND deleted_at IS NULL',
+      `SELECT id, email, password_hash, first_name, last_name
+       FROM users
+       WHERE email = ? AND deleted_at IS NULL`,
       [email]
     );
 
@@ -78,7 +99,12 @@ export const loginUser = async (req: AuthRequest, res: Response) => {
     }
 
     const user = (users as any[])[0];
-    const isPasswordValid = await comparePassword(password, user.password_hash);
+
+    // Compare bcrypt hash
+    const isPasswordValid = await comparePassword(
+      password,
+      user.password_hash
+    );
 
     if (!isPasswordValid) {
       throw new AuthenticationError('Invalid email or password');
@@ -91,10 +117,13 @@ export const loginUser = async (req: AuthRequest, res: Response) => {
       success: true,
       message: 'Login successful',
       data: {
-        userId: user.id,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: 'customer',
+        },
         accessToken,
         refreshToken,
       },
@@ -104,7 +133,10 @@ export const loginUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Admin Login
+/* ============================================================================
+   ADMIN LOGIN
+============================================================================ */
+
 export const loginAdmin = async (req: AuthRequest, res: Response) => {
   const { email, password } = req.body;
 
@@ -115,7 +147,9 @@ export const loginAdmin = async (req: AuthRequest, res: Response) => {
   const connection = await pool.getConnection();
   try {
     const [admins] = await connection.execute(
-      'SELECT id, email, password_hash, first_name, last_name, role FROM admins WHERE email = ? AND deleted_at IS NULL',
+      `SELECT id, email, password_hash, first_name, last_name, role
+       FROM admins
+       WHERE email = ? AND deleted_at IS NULL`,
       [email]
     );
 
@@ -124,30 +158,43 @@ export const loginAdmin = async (req: AuthRequest, res: Response) => {
     }
 
     const admin = (admins as any[])[0];
-    const isPasswordValid = await comparePassword(password, admin.password_hash);
+
+    const isPasswordValid = await comparePassword(
+      password,
+      admin.password_hash
+    );
 
     if (!isPasswordValid) {
       throw new AuthenticationError('Invalid email or password');
     }
 
-    // Update last login
     await connection.execute(
       'UPDATE admins SET last_login = NOW() WHERE id = ?',
       [admin.id]
     );
 
-    const accessToken = generateAccessToken(admin.id, admin.email, admin.role);
-    const refreshToken = generateRefreshToken(admin.id, admin.email, admin.role);
+    const accessToken = generateAccessToken(
+      admin.id,
+      admin.email,
+      admin.role
+    );
+    const refreshToken = generateRefreshToken(
+      admin.id,
+      admin.email,
+      admin.role
+    );
 
     res.json({
       success: true,
       message: 'Admin login successful',
       data: {
-        adminId: admin.id,
-        email: admin.email,
-        firstName: admin.first_name,
-        lastName: admin.last_name,
-        role: admin.role,
+        user: {
+          id: admin.id,
+          email: admin.email,
+          firstName: admin.first_name,
+          lastName: admin.last_name,
+          role: admin.role,
+        },
         accessToken,
         refreshToken,
       },
@@ -157,7 +204,10 @@ export const loginAdmin = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Refresh Token
+/* ============================================================================
+   REFRESH TOKEN
+============================================================================ */
+
 export const refreshToken = async (req: AuthRequest, res: Response) => {
   const { refreshToken: token } = req.body;
 
@@ -166,21 +216,28 @@ export const refreshToken = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const decoded = require('../utils/auth.js').verifyRefreshToken(token);
+    const decoded = verifyRefreshToken(token);
 
-    const accessToken = generateAccessToken(decoded.userId, decoded.email, decoded.role);
+    const accessToken = generateAccessToken(
+      decoded.userId,
+      decoded.email,
+      decoded.role
+    );
 
     res.json({
       success: true,
       message: 'Token refreshed successfully',
       data: { accessToken },
     });
-  } catch (error) {
+  } catch {
     throw new AuthenticationError('Invalid refresh token');
   }
 };
 
-// Get Current User
+/* ============================================================================
+   GET CURRENT USER
+============================================================================ */
+
 export const getCurrentUser = async (req: AuthRequest, res: Response) => {
   if (!req.user) {
     throw new AuthenticationError('Not authenticated');
@@ -189,7 +246,9 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
   const connection = await pool.getConnection();
   try {
     const [users] = await connection.execute(
-      'SELECT id, email, first_name, last_name, phone, gender, city, state, country FROM users WHERE id = ?',
+      `SELECT id, email, first_name, last_name, phone, gender, city, state, country
+       FROM users
+       WHERE id = ?`,
       [req.user.userId]
     );
 
@@ -202,15 +261,17 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
     res.json({
       success: true,
       data: {
-        userId: user.id,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        phone: user.phone,
-        gender: user.gender,
-        city: user.city,
-        state: user.state,
-        country: user.country,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          phone: user.phone,
+          gender: user.gender,
+          city: user.city,
+          state: user.state,
+          country: user.country,
+        },
       },
     });
   } finally {

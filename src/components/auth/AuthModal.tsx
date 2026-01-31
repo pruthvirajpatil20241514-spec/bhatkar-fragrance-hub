@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import apiClient from "@/api/client";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -31,10 +32,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     confirmPassword: "",
   });
 
-  // Close dropdown when clicking outside
+  /* ============================================================================
+     CLOSE MODAL ON OUTSIDE CLICK
+  ============================================================================ */
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         onClose();
       }
     }
@@ -42,32 +48,46 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
+
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onClose]);
 
-  // Redirect to admin dashboard if user is admin
+  /* ============================================================================
+     REDIRECT ADMIN AFTER LOGIN
+  ============================================================================ */
   useEffect(() => {
     if (user?.role === "admin" && !isOpen) {
       navigate("/admin/dashboard");
     }
   }, [user, navigate, isOpen]);
 
+  /* ============================================================================
+     LOGIN HANDLER (REAL AUTH)
+  ============================================================================ */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
-      await login(loginData);
-      onClose();
-      setLoginData({ email: "", password: "" });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const success = await login(loginData);
+
+      if (success) {
+        onClose();
+        setLoginData({ email: "", password: "" });
+      } else {
+        setError("Invalid email or password");
+      }
+    } catch {
+      setError("Login failed");
     } finally {
       setIsLoading(false);
     }
   };
 
+  /* ============================================================================
+     SIGNUP HANDLER (FIXED)
+  ============================================================================ */
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -82,15 +102,42 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         throw new Error("Password must be at least 6 characters");
       }
 
-      await login({
+      // Split full name
+      const parts = signupData.name.trim().split(/\s+/);
+      const firstName = parts[0];
+      const lastName = parts.slice(1).join(" ") || "";
+
+      // 👉 REGISTER USER (THIS WAS MISSING EARLIER)
+      await apiClient.post("/auth/register", {
+        email: signupData.email,
+        password: signupData.password,
+        firstName,
+        lastName,
+      });
+
+      // 👉 LOGIN AFTER SUCCESSFUL SIGNUP
+      const success = await login({
         email: signupData.email,
         password: signupData.password,
       });
 
-      onClose();
-      setSignupData({ name: "", email: "", password: "", confirmPassword: "" });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign up failed");
+      if (success) {
+        onClose();
+        setSignupData({
+          name: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
+      } else {
+        setError(
+          "Account created but login failed. Please log in manually."
+        );
+      }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error || err.message || "Sign up failed";
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -114,14 +161,14 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </h2>
             <button
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="p-6 max-h-96 overflow-y-auto">
+          <div className="p-6">
             {error && (
               <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
                 {error}
@@ -129,163 +176,106 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             )}
 
             {isLogin ? (
-              // Login Form
               <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium block mb-2">Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      type="email"
-                      placeholder="you@example.com"
-                      value={loginData.email}
-                      onChange={(e) =>
-                        setLoginData({ ...loginData, email: e.target.value })
-                      }
-                      className="pl-10 text-sm"
-                      disabled={isLoading}
-                      required
-                    />
-                  </div>
-                </div>
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={loginData.email}
+                  onChange={(e) =>
+                    setLoginData({ ...loginData, email: e.target.value })
+                  }
+                  required
+                />
 
-                <div>
-                  <label className="text-sm font-medium block mb-2">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      value={loginData.password}
-                      onChange={(e) =>
-                        setLoginData({ ...loginData, password: e.target.value })
-                      }
-                      className="pl-10 text-sm"
-                      disabled={isLoading}
-                      required
-                    />
-                  </div>
-                </div>
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={loginData.password}
+                  onChange={(e) =>
+                    setLoginData({ ...loginData, password: e.target.value })
+                  }
+                  required
+                />
 
-                <Button type="submit" className="w-full text-sm" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="w-full">
                   {isLoading ? "Logging in..." : "Log In"}
                 </Button>
 
-                <div className="text-center pt-4 border-t border-border">
-                  <p className="text-xs text-muted-foreground">
-                    Don't have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLogin(false);
-                        setError("");
-                      }}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      Sign Up
-                    </button>
-                  </p>
-                </div>
+                <p className="text-xs text-center">
+                  Don’t have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLogin(false);
+                      setError("");
+                    }}
+                    className="text-primary underline"
+                  >
+                    Sign Up
+                  </button>
+                </p>
               </form>
             ) : (
-              // Signup Form
               <form onSubmit={handleSignup} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium block mb-2">Full Name</label>
-                  <div className="relative">
-                    <UserIcon className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="John Doe"
-                      value={signupData.name}
-                      onChange={(e) =>
-                        setSignupData({ ...signupData, name: e.target.value })
-                      }
-                      className="pl-10 text-sm"
-                      disabled={isLoading}
-                      required
-                    />
-                  </div>
-                </div>
+                <Input
+                  placeholder="Full Name"
+                  value={signupData.name}
+                  onChange={(e) =>
+                    setSignupData({ ...signupData, name: e.target.value })
+                  }
+                  required
+                />
 
-                <div>
-                  <label className="text-sm font-medium block mb-2">Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      type="email"
-                      placeholder="you@example.com"
-                      value={signupData.email}
-                      onChange={(e) =>
-                        setSignupData({ ...signupData, email: e.target.value })
-                      }
-                      className="pl-10 text-sm"
-                      disabled={isLoading}
-                      required
-                    />
-                  </div>
-                </div>
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={signupData.email}
+                  onChange={(e) =>
+                    setSignupData({ ...signupData, email: e.target.value })
+                  }
+                  required
+                />
 
-                <div>
-                  <label className="text-sm font-medium block mb-2">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      value={signupData.password}
-                      onChange={(e) =>
-                        setSignupData({ ...signupData, password: e.target.value })
-                      }
-                      className="pl-10 text-sm"
-                      disabled={isLoading}
-                      required
-                    />
-                  </div>
-                </div>
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={signupData.password}
+                  onChange={(e) =>
+                    setSignupData({ ...signupData, password: e.target.value })
+                  }
+                  required
+                />
 
-                <div>
-                  <label className="text-sm font-medium block mb-2">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      value={signupData.confirmPassword}
-                      onChange={(e) =>
-                        setSignupData({
-                          ...signupData,
-                          confirmPassword: e.target.value,
-                        })
-                      }
-                      className="pl-10 text-sm"
-                      disabled={isLoading}
-                      required
-                    />
-                  </div>
-                </div>
+                <Input
+                  type="password"
+                  placeholder="Confirm Password"
+                  value={signupData.confirmPassword}
+                  onChange={(e) =>
+                    setSignupData({
+                      ...signupData,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  required
+                />
 
-                <Button type="submit" className="w-full text-sm" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="w-full">
                   {isLoading ? "Creating account..." : "Sign Up"}
                 </Button>
 
-                <div className="text-center pt-4 border-t border-border">
-                  <p className="text-xs text-muted-foreground">
-                    Already have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsLogin(true);
-                        setError("");
-                      }}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      Log In
-                    </button>
-                  </p>
-                </div>
+                <p className="text-xs text-center">
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLogin(true);
+                      setError("");
+                    }}
+                    className="text-primary underline"
+                  >
+                    Log In
+                  </button>
+                </p>
               </form>
             )}
           </div>

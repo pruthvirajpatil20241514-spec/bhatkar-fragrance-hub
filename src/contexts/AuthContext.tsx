@@ -1,14 +1,20 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useState,
+  useEffect,
+} from "react";
+import apiClient from "../api/client";
 
 export type UserRole = "admin" | "customer";
 
 export interface User {
-  id: string;
+  id: number;
   email: string;
-  name: string;
+  firstName: string;
+  lastName?: string;
   role: UserRole;
-  phone?: string;
-  address?: string;
 }
 
 interface LoginCredentials {
@@ -21,7 +27,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<boolean>;
   logout: () => void;
   getToken: () => string | null;
 }
@@ -32,70 +38,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize from localStorage
+  /* ============================================================================
+     RESTORE SESSION ON PAGE REFRESH
+  ============================================================================ */
   useEffect(() => {
-    const storedToken = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("accessToken");
     const storedUser = localStorage.getItem("auth_user");
 
-    if (storedToken && storedUser) {
+    if (token && storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
-        console.error("Failed to load user from storage:", error);
-        localStorage.removeItem("auth_token");
+        console.error("Failed to restore user session:", error);
         localStorage.removeItem("auth_user");
+        localStorage.removeItem("accessToken");
       }
     }
+
     setIsLoading(false);
   }, []);
 
-  const generateMockToken = () => {
-    return "mock_jwt_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-  };
-
-  const login = async (credentials: LoginCredentials) => {
+  /* ============================================================================
+     LOGIN (REAL BACKEND AUTH)
+  ============================================================================ */
+  const login = async ({
+    email,
+    password,
+  }: LoginCredentials): Promise<boolean> => {
     setIsLoading(true);
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await apiClient.post("/auth/login", {
+        email,
+        password,
+      });
 
-      if (!credentials.email.includes("@")) {
-        throw new Error("Invalid email format");
+      const data = response.data?.data;
+      const accessToken = data?.accessToken;
+      const user: User = data?.user;
+
+      if (!accessToken || !user?.id) {
+        throw new Error("Invalid login response from server");
       }
 
-      if (credentials.password.length < 6) {
-        throw new Error("Password must be at least 6 characters");
-      }
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("auth_user", JSON.stringify(user));
 
-      // Admin credentials check
-      const isAdmin = credentials.email === "admin@bhatkar.com" && credentials.password === "admin123";
-
-      const mockUser: User = {
-        id: "user_" + Math.random().toString(36).substr(2, 9),
-        email: credentials.email,
-        name: credentials.email.split("@")[0],
-        role: isAdmin ? "admin" : "customer",
-        phone: "+91 98765 43210",
-      };
-
-      const token = generateMockToken();
-
-      localStorage.setItem("auth_token", token);
-      localStorage.setItem("auth_user", JSON.stringify(mockUser));
-
-      setUser(mockUser);
+      setUser(user);
+      return true;
+    } catch (error: any) {
+      console.error(
+        "Login failed:",
+        error?.response?.data || error.message
+      );
+      logout();
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
+  /* ============================================================================
+     LOGOUT
+  ============================================================================ */
   const logout = () => {
-    localStorage.removeItem("auth_token");
+    localStorage.removeItem("accessToken");
     localStorage.removeItem("auth_user");
     setUser(null);
   };
 
+  /* ============================================================================
+     GET ACCESS TOKEN
+  ============================================================================ */
   const getToken = () => {
-    return localStorage.getItem("auth_token");
+    return localStorage.getItem("accessToken");
   };
 
   return (
@@ -103,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isLoading,
-        isAuthenticated: !!user,
+        isAuthenticated: Boolean(user),
         isAdmin: user?.role === "admin",
         login,
         logout,
@@ -115,9 +131,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/* ============================================================================
+   CUSTOM HOOK
+============================================================================ */
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
