@@ -3,6 +3,8 @@ const morgan = require("morgan");
 const cors = require("cors");
 
 const authRoute = require("./routes/auth.route");
+const adminRoute = require("./routes/admin.route");
+const productRoute = require("./routes/product.route");
 const { httpLogStream } = require("./utils/logger");
 
 const app = express();
@@ -13,16 +15,12 @@ app.use(express.urlencoded({ extended: false }));
 app.use(morgan("dev"));
 app.use(morgan("combined", { stream: httpLogStream }));
 
-// ✅ CORS (only once, correctly configured)
-app.use(
-  cors({
-    origin: "https://psychic-lamp-r49rp79474pr2xjq5-8080.app.github.dev",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: false
-  })
-);
+// ✅ CORS (allow all origins)
+app.use(cors());
 
 app.use("/api/auth", authRoute);
+app.use("/api/admin", adminRoute);
+app.use("/api/products", productRoute);
 
 app.get("/", (req, res) => {
   res.status(200).send({

@@ -21,7 +21,8 @@ const signup = (req, res, next) => {
             .required(),
         password: Joi.string()
             .trim()
-            .pattern(new RegExp('^[a-zA-Z0-9]{6,30}$'))
+            .min(6)
+            .max(30)
             .required()
     });
     validatorHandler(req, res, next, schema);
@@ -35,7 +36,8 @@ const signin = (req, res, next) => {
             .required(),
         password: Joi.string()
             .trim()
-            .pattern(new RegExp('^[a-zA-Z0-9]{6,30}$'))
+            .min(6)
+            .max(30)
             .required()
     });
     validatorHandler(req, res, next, schema);
