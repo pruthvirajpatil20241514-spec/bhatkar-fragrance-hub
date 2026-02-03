@@ -93,10 +93,6 @@ class Product {
             if (result[0].affectedRows === 0) {
                 throw { kind: "not_found" };
             }
-                return;
-            }
-            if (res.affectedRows === 0) {
-                cb({ kind: "not_found" }, null);
             return { message: "Product deleted successfully" };
         } catch (error) {
             logger.error(error.message);
