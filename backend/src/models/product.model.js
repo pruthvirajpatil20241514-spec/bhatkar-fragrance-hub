@@ -8,6 +8,12 @@ const {
 } = require('../database/products.queries');
 const { logger } = require('../utils/logger');
 
+// Helper function to convert DECIMAL price to number
+const convertProduct = (product) => ({
+    ...product,
+    price: parseFloat(product.price)
+});
+
 class Product {
     constructor(name, brand, price, category, concentration, description, stock) {
         this.name = name;
@@ -33,7 +39,8 @@ class Product {
                 ]);
             return {
                 id: result[0].insertId,
-                ...newProduct
+                ...newProduct,
+                price: parseFloat(newProduct.price)
             };
         } catch (error) {
             logger.error(error.message);
@@ -44,7 +51,7 @@ class Product {
     static async getAll() {
         try {
             const [rows] = await db.query(getAllProductsQuery);
-            return rows;
+            return rows.map(convertProduct);
         } catch (error) {
             logger.error(error.message);
             throw error;
@@ -55,7 +62,7 @@ class Product {
         try {
             const [rows] = await db.query(getProductByIdQuery, [id]);
             if (rows.length) {
-                return rows[0];
+                return convertProduct(rows[0]);
             }
             throw { kind: "not_found" };
         } catch (error) {
@@ -80,7 +87,11 @@ class Product {
             if (result[0].affectedRows === 0) {
                 throw { kind: "not_found" };
             }
-            return { id, ...updatedProduct };
+            return {
+                id,
+                ...updatedProduct,
+                price: parseFloat(updatedProduct.price)
+            };
         } catch (error) {
             logger.error(error.message);
             throw error;
