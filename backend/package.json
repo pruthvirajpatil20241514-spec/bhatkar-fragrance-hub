@@ -9,7 +9,8 @@
     "db:up": "node src/database/scripts/dbUp.js",
     "db:down": "node src/database/scripts/dbDown.js",
     "tables:up": "node src/database/scripts/tablesUp.js",
-    "db:init": "npm run db:up && npm run tables:up"
+    "db:init": "npm run db:up && npm run tables:up",
+    "db:init:clever-cloud": "node src/database/scripts/initCleverCloud.js"
   },
   "keywords": [],
   "author": "",
