@@ -9,37 +9,22 @@ const { httpLogStream } = require("./utils/logger");
 
 const app = express();
 
-// CORS configuration
-const corsOptions = {
-  origin: [
-    "http://localhost:8080",           // Local development
-    "http://localhost:3000",           // Local development
-    "https://bhatkar-fragrance-hub-5.onrender.com",  // Render frontend
-    "https://bhatkar-fragrance-hub.onrender.com",    // Alternative frontend URL
-    "*"                                 // Allow all origins as fallback
-  ],
-  credentials: true,
+// CORS - MUST be before routes
+app.use(cors({
+  origin: "*",  // Allow all origins for now
+  credentials: false,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-};
+}));
+
+// Handle OPTIONS preflight requests
+app.options("*", cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use(morgan("dev"));
 app.use(morgan("combined", { stream: httpLogStream }));
-
-// ✅ CORS with explicit origin whitelist
-app.use(cors(corsOptions));
-
-// Add explicit headers for API responses
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
-  next();
-});
 
 app.use("/api/auth", authRoute);
 app.use("/api/admin", adminRoute);
