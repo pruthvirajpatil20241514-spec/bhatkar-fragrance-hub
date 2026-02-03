@@ -60,8 +60,7 @@ async function initializeDatabase() {
       user: DB_USER,
       password: DB_PASSWORD,
       database: DB_NAME,
-      port: DB_PORT,
-      ssl: true
+      port: DB_PORT
     });
     
     console.log('✅ Connected to database!\n');
