@@ -39,6 +39,13 @@ interface Product {
   description: string;
   stock: number;
   created_on: string;
+  images?: Array<{
+    id: number;
+    image_url: string;
+    alt_text: string;
+    image_order: number;
+    is_thumbnail: boolean;
+  }>;
 }
 
 interface FormData {
@@ -318,6 +325,7 @@ export default function Products() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
+                  <TableHead>Image</TableHead>
                   <TableHead>Product Name</TableHead>
                   <TableHead>Brand</TableHead>
                   <TableHead>Price</TableHead>
@@ -330,13 +338,31 @@ export default function Products() {
               <TableBody>
                 {products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No products found. Create one to get started!
                     </TableCell>
                   </TableRow>
                 ) : (
-                  products.map((product) => (
+                  products.map((product) => {
+                    // Get thumbnail image for database products
+                    const productImages = product.images || [];
+                    const thumbnailImage = productImages.find((img: any) => img.is_thumbnail) || productImages[0];
+                    const imageUrl = thumbnailImage?.image_url || '/images/placeholder.jpg';
+                    
+                    return (
                     <TableRow key={product.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="w-12 h-16 rounded overflow-hidden bg-muted flex-shrink-0">
+                          <img 
+                            src={imageUrl} 
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            onError={(e: any) => {
+                              e.target.src = '/images/placeholder.jpg';
+                            }}
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell>{product.brand}</TableCell>
                       <TableCell>₹{product.price.toFixed(2)}</TableCell>
@@ -374,7 +400,8 @@ export default function Products() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                  );
+                  })
                 )}
               </TableBody>
             </Table>

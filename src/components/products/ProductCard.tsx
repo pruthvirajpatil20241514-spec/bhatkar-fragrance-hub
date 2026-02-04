@@ -9,9 +9,41 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { formatPrice, cn } from "@/lib/utils";
 
+interface ProductImage {
+  id: number;
+  image_url: string;
+  alt_text: string;
+  image_order: number;
+  is_thumbnail: boolean;
+}
+
+interface DatabaseProduct {
+  id: number;
+  name: string;
+  brand: string;
+  price: number;
+  category: string;
+  concentration: string;
+  description: string;
+  stock: number;
+  images: ProductImage[];
+}
+
 interface ProductCardProps {
-  product: Product;
+  product: Product | DatabaseProduct;
   index?: number;
+}
+
+function isStaticProduct(product: any): product is Product {
+  return 'fragranceType' in product && 'sizes' in product;
+}
+
+function getDatabaseProductImage(product: DatabaseProduct): string {
+  if (product.images && product.images.length > 0) {
+    const thumbnail = product.images.find(img => img.is_thumbnail) || product.images[0];
+    return thumbnail.image_url;
+  }
+  return '/images/placeholder.jpg';
 }
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
@@ -20,12 +52,26 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { addItem } = useCart();
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const isWishlisted = isInWishlist(product.id);
+  
+  const isStatic = isStaticProduct(product);
+  const imageUrl = isStatic 
+    ? product.images[0] 
+    : getDatabaseProductImage(product as DatabaseProduct);
+  const productPrice = product.price;
+  const productName = product.name;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const defaultSize = product.sizes[product.sizes.length - 1];
-    addItem(product, defaultSize.ml, defaultSize.price);
+    
+    if (isStatic) {
+      const staticProduct = product as Product;
+      const defaultSize = staticProduct.sizes[staticProduct.sizes.length - 1];
+      addItem(staticProduct, defaultSize.ml, defaultSize.price);
+    } else {
+      const dbProduct = product as DatabaseProduct;
+      addItem(dbProduct as any, 1, dbProduct.price);
+    }
   };
 
   return (
@@ -43,35 +89,40 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           {/* Image Container */}
           <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
             <motion.img
-              src={product.images[0]}
-              alt={product.name}
+              src={imageUrl}
+              alt={productName}
               className="h-full w-full object-cover"
               animate={{ scale: isHovered ? 1.05 : 1 }}
               transition={{ duration: 0.4 }}
+              onError={(e: any) => {
+                e.target.src = '/images/placeholder.jpg';
+              }}
             />
 
-            {/* Badges */}
-            <div className="absolute left-3 top-3 flex flex-col gap-2">
-              {product.isNewArrival && (
-                <Badge className="bg-primary text-primary-foreground">New</Badge>
-              )}
-              {product.isBestSeller && (
-                <Badge className="bg-accent text-accent-foreground">Best Seller</Badge>
-              )}
-              {product.isLuxury && (
-                <Badge className="bg-charcoal text-ivory">Luxury</Badge>
-              )}
-              {product.originalPrice && (
-                <Badge className="bg-destructive text-destructive-foreground">
-                  {Math.round(
-                    ((product.originalPrice - product.price) /
-                      product.originalPrice) *
-                      100
-                  )}
-                  % Off
-                </Badge>
-              )}
-            </div>
+            {/* Badges - Only show for static products */}
+            {isStatic && (
+              <div className="absolute left-3 top-3 flex flex-col gap-2">
+                {(product as Product).isNewArrival && (
+                  <Badge className="bg-primary text-primary-foreground">New</Badge>
+                )}
+                {(product as Product).isBestSeller && (
+                  <Badge className="bg-accent text-accent-foreground">Best Seller</Badge>
+                )}
+                {(product as Product).isLuxury && (
+                  <Badge className="bg-charcoal text-ivory">Luxury</Badge>
+                )}
+                {(product as Product).originalPrice && (
+                  <Badge className="bg-destructive text-destructive-foreground">
+                    {Math.round(
+                      (((product as Product).originalPrice - productPrice) /
+                        (product as Product).originalPrice) *
+                        100
+                    )}
+                    % Off
+                  </Badge>
+                )}
+              </div>
+            )}
 
             {/* Wishlist Button */}
             <motion.button
@@ -89,7 +140,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                 if (isWishlisted) {
                   removeFromWishlist(product.id);
                 } else {
-                  addToWishlist(product);
+                  addToWishlist(product as any);
                 }
               }}
             >
@@ -119,50 +170,78 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           {/* Product Info */}
           <div className="p-4">
             {/* Category */}
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-              {product.category} • {product.fragranceType}
-            </p>
+            {isStatic ? (
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                {(product as Product).category} • {(product as Product).fragranceType}
+              </p>
+            ) : (
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                {(product as DatabaseProduct).category} • {(product as DatabaseProduct).concentration}
+              </p>
+            )}
 
-            {/* Name */}
-            <h3 className="font-display text-lg font-semibold mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-              {product.name}
-            </h3>
-
-            {/* Rating */}
-            <div className="flex items-center gap-1 mb-3">
-              <Star className="h-4 w-4 fill-primary text-primary" />
-              <span className="text-sm font-medium">{product.rating}</span>
-              <span className="text-sm text-muted-foreground">
-                ({product.reviewCount} reviews)
-              </span>
+            {/* Name & Brand */}
+            <div>
+              <h3 className="font-display text-lg font-semibold mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                {productName}
+              </h3>
+              {!isStatic && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  {(product as DatabaseProduct).brand}
+                </p>
+              )}
             </div>
 
+            {/* Rating - Only show for static products */}
+            {isStatic && (
+              <div className="flex items-center gap-1 mb-3">
+                <Star className="h-4 w-4 fill-primary text-primary" />
+                <span className="text-sm font-medium">{(product as Product).rating}</span>
+                <span className="text-sm text-muted-foreground">
+                  ({(product as Product).reviewCount} reviews)
+                </span>
+              </div>
+            )}
+
             {/* Price */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-3">
               <span className="text-lg font-semibold text-primary">
-                {formatPrice(product.price)}
+                ₹{formatPrice(productPrice)}
               </span>
-              {product.originalPrice && (
+              {isStatic && (product as Product).originalPrice && (
                 <span className="text-sm text-muted-foreground line-through">
-                  {formatPrice(product.originalPrice)}
+                  ₹{formatPrice((product as Product).originalPrice)}
                 </span>
               )}
             </div>
 
-            {/* Size Options Preview */}
-            <div className="flex gap-2 mt-3">
-              {product.sizes.map((size) => (
-                <span
-                  key={size.ml}
-                  className="text-xs px-2 py-1 rounded bg-secondary text-muted-foreground"
-                >
-                  {size.ml}ml
-                </span>
-              ))}
-            </div>
+            {/* Size Options Preview - Only for static products */}
+            {isStatic && (
+              <div className="flex gap-2 mt-3 mb-3">
+                {(product as Product).sizes.map((size) => (
+                  <span
+                    key={size.ml}
+                    className="text-xs px-2 py-1 rounded bg-secondary text-muted-foreground"
+                  >
+                    {size.ml}ml
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Stock Status - For database products */}
+            {!isStatic && (
+              <div className="text-xs mb-3">
+                {(product as DatabaseProduct).stock > 0 ? (
+                  <span className="text-green-600 font-medium">In Stock ({(product as DatabaseProduct).stock})</span>
+                ) : (
+                  <span className="text-red-600 font-medium">Out of Stock</span>
+                )}
+              </div>
+            )}
 
             {/* Mobile Quick Action Buttons */}
-            <div className="flex gap-2 mt-4 md:hidden">
+            <div className="flex gap-2 md:hidden">
               <Button 
                 size="sm" 
                 className="flex-1 h-8 text-xs"
@@ -181,7 +260,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                   if (isWishlisted) {
                     removeFromWishlist(product.id);
                   } else {
-                    addToWishlist(product);
+                    addToWishlist(product as any);
                   }
                 }}
               >

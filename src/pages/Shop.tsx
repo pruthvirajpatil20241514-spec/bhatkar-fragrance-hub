@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Filter, SlidersHorizontal, X, Search } from "lucide-react";
@@ -25,6 +25,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { products } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
+import api from "@/lib/axios";
+import { toast } from "sonner";
+
+interface DatabaseProduct {
+  id: number;
+  name: string;
+  brand: string;
+  price: number;
+  category: string;
+  concentration: string;
+  description: string;
+  stock: number;
+  images: Array<{
+    id: number;
+    image_url: string;
+    alt_text: string;
+    image_order: number;
+    is_thumbnail: boolean;
+  }>;
+}
 
 const categories = [
   { value: "men", label: "Men" },
@@ -67,20 +87,32 @@ export default function Shop() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 6000]);
   const [sortBy, setSortBy] = useState("popularity");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [dbProducts, setDbProducts] = useState<DatabaseProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch products from database with images
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/products/with-images/all');
+        setDbProducts(response.data.data || []);
+      } catch (error: any) {
+        console.error('Failed to fetch products:', error);
+        // Fall back to static products if API fails
+        setDbProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const filteredProducts = useMemo(() => {
-    let result = [...products];
-
-    // Collection filter
-    if (collectionParam) {
-      if (collectionParam === "best-sellers") {
-        result = result.filter((p) => p.isBestSeller);
-      } else if (collectionParam === "new-arrivals") {
-        result = result.filter((p) => p.isNewArrival);
-      } else if (collectionParam === "luxury") {
-        result = result.filter((p) => p.isLuxury);
-      }
-    }
+    // Use database products if available, otherwise fall back to static products
+    let sourceProducts = dbProducts.length > 0 ? dbProducts : products;
+    let result = [...sourceProducts];
 
     // Search filter
     if (searchQuery) {
@@ -89,25 +121,15 @@ export default function Shop() {
         (p) =>
           p.name.toLowerCase().includes(query) ||
           p.description.toLowerCase().includes(query) ||
-          p.notes.top.some((n) => n.toLowerCase().includes(query)) ||
-          p.notes.middle.some((n) => n.toLowerCase().includes(query)) ||
-          p.notes.base.some((n) => n.toLowerCase().includes(query))
+          p.brand.toLowerCase().includes(query)
       );
     }
 
     // Category filter
     if (selectedCategories.length > 0) {
-      result = result.filter((p) => selectedCategories.includes(p.category));
-    }
-
-    // Fragrance type filter
-    if (selectedTypes.length > 0) {
-      result = result.filter((p) => selectedTypes.includes(p.fragranceType));
-    }
-
-    // Longevity filter
-    if (selectedLongevity.length > 0) {
-      result = result.filter((p) => selectedLongevity.includes(p.longevity));
+      result = result.filter((p) => 
+        selectedCategories.includes(p.category.toLowerCase())
+      );
     }
 
     // Price filter
@@ -124,14 +146,11 @@ export default function Shop() {
         result.sort((a, b) => b.price - a.price);
         break;
       case "newest":
-        result.sort((a, b) => (a.isNewArrival ? -1 : 1));
-        break;
-      case "rating":
-        result.sort((a, b) => b.rating - a.rating);
+        result.sort((a, b) => b.id - a.id);
         break;
       case "popularity":
       default:
-        result.sort((a, b) => b.reviewCount - a.reviewCount);
+        result.sort((a, b) => b.id - a.id);
     }
 
     return result;
@@ -143,6 +162,7 @@ export default function Shop() {
     priceRange,
     sortBy,
     collectionParam,
+    dbProducts
   ]);
 
   const clearFilters = () => {
