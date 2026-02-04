@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Loader } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +27,7 @@ import {
 import api from "@/lib/axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface Product {
   id: number;
@@ -50,6 +51,14 @@ interface FormData {
   stock: string;
 }
 
+interface ProductImage {
+  id?: number;
+  imageUrl: string;
+  altText: string;
+  imageOrder: number;
+  isThumbnail: boolean;
+}
+
 export default function Products() {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -69,6 +78,8 @@ export default function Products() {
     description: "",
     stock: "0",
   });
+
+  const [images, setImages] = useState<ProductImage[]>([]);
 
   // Redirect if not admin
   useEffect(() => {
@@ -108,6 +119,8 @@ export default function Products() {
         description: product.description,
         stock: product.stock.toString(),
       });
+      // Load existing images for product
+      loadProductImages(product.id);
     } else {
       setEditingId(null);
       setFormData({
@@ -119,8 +132,27 @@ export default function Products() {
         description: "",
         stock: "0",
       });
+      setImages([]);
     }
     setIsOpen(true);
+  };
+
+  const loadProductImages = async (productId: number) => {
+    try {
+      const response = await api.get(`/products/${productId}/images`);
+      if (response.data.data) {
+        setImages(response.data.data.map((img: any) => ({
+          id: img.id,
+          imageUrl: img.image_url,
+          altText: img.alt_text || "",
+          imageOrder: img.image_order,
+          isThumbnail: img.is_thumbnail
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to load product images");
+      setImages([]);
+    }
   };
 
   const handleCloseDialog = () => {
@@ -135,6 +167,7 @@ export default function Products() {
       description: "",
       stock: "0",
     });
+    setImages([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,21 +193,78 @@ export default function Products() {
         stock: parseInt(formData.stock) || 0,
       };
 
+      let productId: number;
+
       if (editingId) {
-        // Update
+        // Update product
         await api.put(`/products/${editingId}`, payload);
+        productId = editingId;
       } else {
-        // Create
-        await api.post("/products", payload);
+        // Create product
+        const response = await api.post("/products", payload);
+        productId = response.data.data.id;
+      }
+
+      // Handle images - add new ones
+      if (images.length > 0) {
+        const newImages = images.filter(img => !img.id); // Only new images
+        if (newImages.length > 0) {
+          const imagePayload = {
+            images: newImages.map((img, index) => ({
+              imageUrl: img.imageUrl,
+              altText: img.altText,
+              imageOrder: index + 1,
+              isThumbnail: index === 0
+            }))
+          };
+          await api.post(`/products/${productId}/images`, imagePayload);
+        }
       }
 
       await fetchProducts();
       handleCloseDialog();
+      toast.success(editingId ? "Product updated successfully!" : "Product created successfully!");
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to save product");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddImage = (imageUrl: string, altText: string) => {
+    if (images.length >= 4) {
+      toast.error("Maximum 4 images per product");
+      return;
+    }
+
+    if (!imageUrl.trim()) {
+      toast.error("Please enter image URL");
+      return;
+    }
+
+    const newImage: ProductImage = {
+      imageUrl: imageUrl.trim(),
+      altText: altText.trim() || "Product image",
+      imageOrder: images.length + 1,
+      isThumbnail: images.length === 0
+    };
+
+    setImages([...images, newImage]);
+    toast.success("Image added!");
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+    toast.success("Image removed");
+  };
+
+  const handleSetThumbnail = (index: number) => {
+    const updatedImages = images.map((img, i) => ({
+      ...img,
+      isThumbnail: i === index
+    }));
+    setImages(updatedImages);
+    toast.success("Thumbnail updated");
   };
 
   const handleDelete = async (id: number) => {
@@ -401,6 +491,60 @@ export default function Products() {
               />
             </div>
 
+            {/* Product Images */}
+            <div className="border-t pt-4">
+              <div className="mb-4">
+                <label className="text-sm font-medium block mb-3">Product Images (Max 4)</label>
+                
+                {/* Image Upload Form */}
+                <div className="space-y-3 mb-4 p-3 bg-muted/50 rounded-lg">
+                  <ImageUploadForm 
+                    onAdd={handleAddImage}
+                    disabled={isSubmitting || images.length >= 4}
+                  />
+                </div>
+
+                {/* Images List */}
+                {images.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {images.length} image{images.length !== 1 ? 's' : ''} added
+                    </p>
+                    {images.map((image, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 p-2 bg-muted rounded border border-input"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs truncate font-medium">{image.altText}</p>
+                          <p className="text-xs text-muted-foreground truncate">{image.imageUrl}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={image.isThumbnail ? "default" : "outline"}
+                          onClick={() => handleSetThumbnail(index)}
+                          disabled={isSubmitting}
+                          className="text-xs"
+                        >
+                          {image.isThumbnail ? "✓ Thumb" : "Thumb"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleRemoveImage(index)}
+                          disabled={isSubmitting}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Actions */}
             <div className="flex gap-2 justify-end pt-4">
               <Button
@@ -420,5 +564,66 @@ export default function Products() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Image Upload Form Component
+function ImageUploadForm({ 
+  onAdd, 
+  disabled 
+}: { 
+  onAdd: (imageUrl: string, altText: string) => void;
+  disabled?: boolean;
+}) {
+  const [imageUrl, setImageUrl] = useState("");
+  const [altText, setAltText] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAdd(imageUrl, altText);
+    setImageUrl("");
+    setAltText("");
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2">
+      <div>
+        <label className="text-xs font-medium block mb-1">Image URL *</label>
+        <Input
+          type="url"
+          placeholder="https://example.com/image.jpg"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          disabled={disabled}
+          className="text-xs"
+          required
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Use HTTPS URLs (e.g., Unsplash, Cloudinary, or your image CDN)
+        </p>
+      </div>
+
+      <div>
+        <label className="text-xs font-medium block mb-1">Alt Text</label>
+        <Input
+          type="text"
+          placeholder="e.g., Product front view"
+          value={altText}
+          onChange={(e) => setAltText(e.target.value)}
+          disabled={disabled}
+          className="text-xs"
+        />
+      </div>
+
+      <Button
+        type="submit"
+        disabled={disabled || !imageUrl.trim()}
+        className="w-full text-xs gap-1"
+        size="sm"
+      >
+        <Upload className="h-3 w-3" />
+        Add Image
+      </Button>
+    </form>
   );
 }
