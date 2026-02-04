@@ -22,9 +22,6 @@ router.get('/profile', adminAuth, adminController.getProfile);
 // Admin Logout - POST /api/admin/logout
 router.post('/logout', adminAuth, adminController.logout);
 
-module.exports = router;
-
-
 /**
  * Product Management (CRUD)
  */
