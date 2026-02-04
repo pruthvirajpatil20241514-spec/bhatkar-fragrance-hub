@@ -11,7 +11,7 @@ const login = (req, res, next) => {
             .required()
     });
 
-    return validatorHandler(req, res, next, schema);
+    validatorHandler(req, res, next, schema);
 };
 
 module.exports = {
