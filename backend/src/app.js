@@ -1,10 +1,12 @@
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
+const path = require("path");
 
 const authRoute = require("./routes/auth.route");
 const adminRoute = require("./routes/admin.route");
 const productRoute = require("./routes/product.route");
+const uploadRoute = require("./routes/upload.route");
 const { httpLogStream } = require("./utils/logger");
 
 const app = express();
@@ -36,6 +38,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 app.use(morgan("dev"));
 app.use(morgan("combined", { stream: httpLogStream }));
 
@@ -61,6 +66,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoute);
 app.use("/api/admin", adminRoute);
 app.use("/api/products", productRoute);
+app.use("/api/upload-image", uploadRoute);
 
 // ===== 404 HANDLER =====
 app.use((req, res) => {

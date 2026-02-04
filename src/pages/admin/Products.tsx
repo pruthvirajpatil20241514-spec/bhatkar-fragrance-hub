@@ -577,53 +577,272 @@ function ImageUploadForm({
 }) {
   const [imageUrl, setImageUrl] = useState("");
   const [altText, setAltText] = useState("");
+  const [uploadMethod, setUploadMethod] = useState<"url" | "file">("file");
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileSelect = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setFilePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (files && files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  const handleUploadFile = async () => {
+    if (!selectedFile || !altText.trim()) {
+      toast.error("Please select a file and add alt text");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("altText", altText);
+
+      // Upload to backend - adjust endpoint based on your API
+      const response = await api.post("/upload-image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      const imageUrl = response.data.imageUrl || response.data.url;
+      onAdd(imageUrl, altText);
+      
+      // Reset form
+      setSelectedFile(null);
+      setFilePreview(null);
+      setAltText("");
+      toast.success("Image uploaded successfully!");
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast.error(error.response?.data?.message || "Failed to upload image");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleUrlSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!imageUrl.trim()) {
+      toast.error("Please enter an image URL");
+      return;
+    }
     onAdd(imageUrl, altText);
     setImageUrl("");
     setAltText("");
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      <div>
-        <label className="text-xs font-medium block mb-1">Image URL *</label>
-        <Input
-          type="url"
-          placeholder="https://example.com/image.jpg"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          disabled={disabled}
-          className="text-xs"
-          required
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Use HTTPS URLs (e.g., Unsplash, Cloudinary, or your image CDN)
-        </p>
+    <div className="space-y-3">
+      {/* Upload Method Tabs */}
+      <div className="flex gap-2 border-b">
+        <button
+          type="button"
+          onClick={() => setUploadMethod("file")}
+          className={`px-3 py-2 text-xs font-medium transition-colors ${
+            uploadMethod === "file"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          📁 Upload File
+        </button>
+        <button
+          type="button"
+          onClick={() => setUploadMethod("url")}
+          className={`px-3 py-2 text-xs font-medium transition-colors ${
+            uploadMethod === "url"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          🔗 Use URL
+        </button>
       </div>
 
-      <div>
-        <label className="text-xs font-medium block mb-1">Alt Text</label>
-        <Input
-          type="text"
-          placeholder="e.g., Product front view"
-          value={altText}
-          onChange={(e) => setAltText(e.target.value)}
-          disabled={disabled}
-          className="text-xs"
-        />
-      </div>
+      {/* File Upload Method */}
+      {uploadMethod === "file" && (
+        <div className="space-y-2">
+          {/* Drag and Drop Zone */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+              isDragging
+                ? "border-primary bg-primary/5"
+                : "border-input bg-muted/50 hover:border-primary/50"
+            }`}
+          >
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileInputChange}
+              disabled={disabled}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              id="fileInput"
+            />
+            <label htmlFor="fileInput" className="cursor-pointer block">
+              {filePreview ? (
+                <div className="space-y-2">
+                  <img
+                    src={filePreview}
+                    alt="Preview"
+                    className="h-20 w-20 object-cover rounded mx-auto"
+                  />
+                  <p className="text-xs font-medium text-foreground">
+                    {selectedFile?.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Click or drag to replace
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                  <p className="text-xs font-medium text-foreground">
+                    Drag and drop your image here
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    or click to select from computer
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Max size: 5MB (JPG, PNG, WebP)
+                  </p>
+                </div>
+              )}
+            </label>
+          </div>
 
-      <Button
-        type="submit"
-        disabled={disabled || !imageUrl.trim()}
-        className="w-full text-xs gap-1"
-        size="sm"
-      >
-        <Upload className="h-3 w-3" />
-        Add Image
-      </Button>
-    </form>
+          {/* Alt Text Input */}
+          <div>
+            <label className="text-xs font-medium block mb-1">Alt Text *</label>
+            <Input
+              type="text"
+              placeholder="e.g., Product front view"
+              value={altText}
+              onChange={(e) => setAltText(e.target.value)}
+              disabled={disabled || !selectedFile}
+              className="text-xs"
+            />
+          </div>
+
+          {/* Upload Button */}
+          <Button
+            type="button"
+            onClick={handleUploadFile}
+            disabled={disabled || !selectedFile || !altText.trim() || isUploading}
+            className="w-full text-xs gap-1"
+            size="sm"
+          >
+            {isUploading ? (
+              <>
+                <Loader className="h-3 w-3 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="h-3 w-3" />
+                Upload Image
+              </>
+            )}
+          </Button>
+
+          {selectedFile && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedFile(null);
+                setFilePreview(null);
+              }}
+              disabled={disabled}
+              className="w-full text-xs"
+            >
+              Clear Selection
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* URL Upload Method */}
+      {uploadMethod === "url" && (
+        <form onSubmit={handleUrlSubmit} className="space-y-2">
+          <div>
+            <label className="text-xs font-medium block mb-1">Image URL *</label>
+            <Input
+              type="url"
+              placeholder="https://example.com/image.jpg"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              disabled={disabled}
+              className="text-xs"
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Use HTTPS URLs (e.g., Unsplash, Cloudinary, or your image CDN)
+            </p>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium block mb-1">Alt Text</label>
+            <Input
+              type="text"
+              placeholder="e.g., Product front view"
+              value={altText}
+              onChange={(e) => setAltText(e.target.value)}
+              disabled={disabled}
+              className="text-xs"
+            />
+          </div>
+
+          <Button
+            type="submit"
+            disabled={disabled || !imageUrl.trim()}
+            className="w-full text-xs gap-1"
+            size="sm"
+          >
+            <Upload className="h-3 w-3" />
+            Add Image
+          </Button>
+        </form>
+      )}
+    </div>
   );
 }
