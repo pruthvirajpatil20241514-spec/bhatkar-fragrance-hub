@@ -1,0 +1,8 @@
+services:
+  - type: static
+    name: bhatkar-fragrance-hub-5
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://bhatkar-fragrance-hub-1.onrender.com/api
