@@ -111,7 +111,7 @@ export default function ProductDetailWithImages() {
       return;
     }
 
-    addItem(product as any, 50, product.price, quantity);
+    addItem(product as any, quantity, product.price);
     toast.success(`${product.name} added to cart!`, {
       description: `Quantity: ${quantity}`,
     });
