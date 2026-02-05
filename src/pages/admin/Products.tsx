@@ -667,12 +667,18 @@ function ImageUploadForm({
 
     if (!productId) {
       toast.error("Please fill in product details and save first to enable image uploads");
-      formData.append("images", selectedFile);
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const form = new FormData();
+      form.append("images", selectedFile);
 
       console.log("Uploading file:", selectedFile.name, "to product:", productId);
 
       // Upload to backend Railway Storage endpoint
-      const response = await api.post(`/images/upload/${productId}`, formData, {
+      const response = await api.post(`/images/upload/${productId}`, form, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
