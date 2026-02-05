@@ -89,18 +89,19 @@ exports.uploadProductImages = async (req, res) => {
     const savedImages = [];
     for (const imgData of uploadedImages) {
       try {
-        const newImage = new ProductImage(
+        logger.info(`  Saving image to database: ${imgData.imageUrl}`);
+        
+        const saved = await ProductImage.addImage({
           productId,
-          imgData.imageUrl,
-          imgData.imageFormat,
-          imgData.altText,
-          imgData.imageOrder,
-          imgData.isThumbnail
-        );
+          imageUrl: imgData.imageUrl,
+          imageFormat: imgData.imageFormat,
+          altText: imgData.altText,
+          imageOrder: imgData.imageOrder,
+          isThumbnail: imgData.isThumbnail
+        });
 
-        const saved = await ProductImage.addImage(newImage);
         savedImages.push(saved);
-        logger.info(`  ✅ Saved image: ${imgData.imageUrl}`);
+        logger.info(`  ✅ Saved image with ID ${saved.id}: ${imgData.imageUrl}`);
       } catch (dbError) {
         logger.error(`Failed to save image to database: ${dbError.message}`);
 
