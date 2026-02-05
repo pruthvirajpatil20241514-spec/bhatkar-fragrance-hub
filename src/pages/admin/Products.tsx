@@ -211,6 +211,7 @@ export default function Products() {
         // Create product
         const response = await api.post("/products", payload);
         productId = response.data.data.id;
+        setEditingId(productId); // Enable image uploads after product creation
       }
 
       // Handle images - add new ones
@@ -665,14 +666,7 @@ function ImageUploadForm({
     }
 
     if (!productId) {
-      toast.error("Please save the product first before uploading images");
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      // Use FormData with raw file - backend will stream to Railway Storage
-      const formData = new FormData();
+      toast.error("Please fill in product details and save first to enable image uploads");
       formData.append("images", selectedFile);
 
       console.log("Uploading file:", selectedFile.name, "to product:", productId);
@@ -720,27 +714,38 @@ function ImageUploadForm({
 
   return (
     <div className="space-y-3">
+      {/* Show message if product not yet saved */}
+      {!productId && (
+        <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-xs text-blue-900 font-medium">
+            💡 Tip: Save the product details first to enable image uploads
+          </p>
+        </div>
+      )}
+
       {/* Upload Method Tabs */}
       <div className="flex gap-2 border-b">
         <button
           type="button"
           onClick={() => setUploadMethod("file")}
+          disabled={!productId}
           className={`px-3 py-2 text-xs font-medium transition-colors ${
             uploadMethod === "file"
               ? "border-b-2 border-primary text-primary"
               : "text-muted-foreground hover:text-foreground"
-          }`}
+          } ${!productId ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           📁 Upload File
         </button>
         <button
           type="button"
           onClick={() => setUploadMethod("url")}
+          disabled={!productId}
           className={`px-3 py-2 text-xs font-medium transition-colors ${
             uploadMethod === "url"
               ? "border-b-2 border-primary text-primary"
               : "text-muted-foreground hover:text-foreground"
-          }`}
+          } ${!productId ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           🔗 Use URL
         </button>
