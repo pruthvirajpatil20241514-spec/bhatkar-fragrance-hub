@@ -18,6 +18,13 @@ const railwayS3Config = {
   forcePathStyle: true, // Required for S3-compatible services
 };
 
+// Log configuration (hide sensitive values)
+console.log('🔧 Railway Storage Configuration:');
+console.log(`  - Endpoint: ${railwayS3Config.endpoint}`);
+console.log(`  - Bucket: ${process.env.S3_BUCKET || 'NOT SET'}`);
+console.log(`  - Access Key: ${process.env.S3_ACCESS_KEY ? '✅ Set' : '❌ NOT SET'}`);
+console.log(`  - Secret Key: ${process.env.S3_SECRET_KEY ? '✅ Set' : '❌ NOT SET'}`);
+
 // Initialize S3 client
 const s3Client = new S3Client(railwayS3Config);
 
@@ -29,10 +36,28 @@ const s3Client = new S3Client(railwayS3Config);
  */
 async function uploadToRailway(fileBuffer, fileName) {
   try {
+    // Validate credentials and config
+    if (!process.env.S3_BUCKET) {
+      throw new Error('S3_BUCKET environment variable not set');
+    }
+    if (!process.env.S3_ACCESS_KEY) {
+      throw new Error('S3_ACCESS_KEY environment variable not set');
+    }
+    if (!process.env.S3_SECRET_KEY) {
+      throw new Error('S3_SECRET_KEY environment variable not set');
+    }
+
     // Generate unique key to prevent name collisions
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
     const fileKey = `products/${timestamp}-${random}-${fileName}`;
+
+    console.log(`📤 Starting upload to Railway Storage:`, {
+      bucket: process.env.S3_BUCKET,
+      key: fileKey,
+      fileSize: fileBuffer.length,
+      endpoint: process.env.S3_ENDPOINT,
+    });
 
     const uploadCommand = new PutObjectCommand({
       Bucket: process.env.S3_BUCKET,
@@ -42,15 +67,23 @@ async function uploadToRailway(fileBuffer, fileName) {
       ACL: 'public-read', // Make file publicly readable
     });
 
-    await s3Client.send(uploadCommand);
+    const result = await s3Client.send(uploadCommand);
+    console.log(`✅ Upload successful:`, {
+      key: fileKey,
+      etag: result.ETag,
+    });
 
     // Construct public URL
     const publicUrl = `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}/${fileKey}`;
-    console.log(`✅ Uploaded: ${publicUrl}`);
+    console.log(`✅ Public URL: ${publicUrl}`);
     
     return publicUrl;
   } catch (error) {
-    console.error('❌ Upload error:', error.message);
+    console.error('❌ Upload failed:', {
+      message: error.message,
+      code: error.code,
+      statusCode: error.$metadata?.httpStatusCode,
+    });
     throw new Error(`Failed to upload to Railway Storage: ${error.message}`);
   }
 }

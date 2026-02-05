@@ -47,10 +47,20 @@ app.use(morgan("combined", { stream: httpLogStream }));
 
 // ===== HEALTH CHECK ENDPOINT (for debugging) =====
 app.get("/health", (req, res) => {
+  const railwayConfig = {
+    endpoint: process.env.S3_ENDPOINT || "❌ NOT SET",
+    bucket: process.env.S3_BUCKET || "❌ NOT SET",
+    accessKey: process.env.S3_ACCESS_KEY ? "✅ SET" : "❌ NOT SET",
+    secretKey: process.env.S3_SECRET_KEY ? "✅ SET" : "❌ NOT SET",
+  };
+  
+  console.log("🏥 Health check requested. Railway Storage config:", railwayConfig);
+  
   res.status(200).json({
     status: "healthy",
     timestamp: new Date().toISOString(),
-    message: "Backend API is running with CORS enabled"
+    message: "Backend API is running with CORS enabled",
+    railwayStorage: railwayConfig,
   });
 });
 

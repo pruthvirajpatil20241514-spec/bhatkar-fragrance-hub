@@ -73,11 +73,21 @@ exports.uploadProductImages = async (req, res) => {
         const file = files[i];
         console.log(`📤 Uploading file ${i + 1}/${files.length}: ${file.originalname} (${file.size} bytes)`);
         
+        if (!file.buffer) {
+          throw new Error('File buffer is missing');
+        }
+
+        console.log(`   File details: Type=${file.mimetype}, Encoding=${file.encoding}`);
+        
         const imageUrl = await uploadToRailway(
           file.buffer,
           file.originalname
         );
         
+        if (!imageUrl) {
+          throw new Error('Upload returned no URL');
+        }
+
         console.log(`✅ File uploaded to Railway: ${imageUrl}`);
 
         // Determine image order and thumbnail status
@@ -109,7 +119,12 @@ exports.uploadProductImages = async (req, res) => {
           is_thumbnail: isThumbnail,
         });
       } catch (error) {
-        console.error(`❌ Error uploading file ${i + 1}:`, error.message);
+        console.error(`❌ Error uploading file ${i + 1}:`, {
+          fileName: files[i]?.originalname,
+          errorMessage: error.message,
+          errorCode: error.code,
+          stack: error.stack,
+        });
         failedUploads.push({
           fileName: files[i].originalname,
           error: error.message,
