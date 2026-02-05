@@ -7,6 +7,7 @@ const authRoute = require("./routes/auth.route");
 const adminRoute = require("./routes/admin.route");
 const productRoute = require("./routes/product.route");
 const uploadRoute = require("./routes/upload.route");
+const imageRoute = require("./routes/image.route");
 const { httpLogStream } = require("./utils/logger");
 
 const app = express();
@@ -67,6 +68,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/admin", adminRoute);
 app.use("/api/products", productRoute);
 app.use("/api/upload-image", uploadRoute);
+app.use("/api/images", imageRoute);
 
 // ===== 404 HANDLER =====
 app.use((req, res) => {
