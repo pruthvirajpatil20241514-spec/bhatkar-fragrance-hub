@@ -58,6 +58,7 @@ export default function AdminProductImageManager() {
   const handleDeleteImage = async (imageId: number) => {
     try {
       setDeleting(imageId);
+      // Correct endpoint: /api/images/:productId/:imageId
       await api.delete(`/images/${id}/${imageId}`);
       setImages(images.filter(img => img.id !== imageId));
       toast.success("Image deleted successfully");
