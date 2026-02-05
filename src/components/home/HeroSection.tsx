@@ -2,12 +2,39 @@ import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Flower2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useRef, useEffect } from "react";
 
 export function HeroSection() {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const onReady = () => {
+      try {
+        // Dispatch an event so any external controller can safely initialize
+        window.dispatchEvent(new CustomEvent('videoControllerReady', { detail: { video: v } }));
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    v.addEventListener('loadedmetadata', onReady);
+    // also try canplay as fallback
+    v.addEventListener('canplay', onReady);
+
+    return () => {
+      v.removeEventListener('loadedmetadata', onReady);
+      v.removeEventListener('canplay', onReady);
+    };
+  }, []);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Video Background */}
       <video
+        ref={videoRef}
         autoPlay
         muted
         loop
