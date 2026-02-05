@@ -27,9 +27,16 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  // Sort images by order
+  // Helper to build full URL for images (prefix API base if relative path)
+  const apiBase = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '') : '';
+  const buildImageUrl = (url?: string) => {
+    if (!url) return '';
+    return url.startsWith('http') ? url : `${apiBase}${url}`;
+  };
+
+  // Sort images by order (use a copy to avoid mutating props)
   const sortedImages = React.useMemo(
-    () => images.sort((a, b) => a.image_order - b.image_order),
+    () => [...images].sort((a, b) => a.image_order - b.image_order),
     [images]
   );
 
@@ -88,7 +95,7 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
       {/* Main Image Display */}
       <div className="main-image-container">
         <img
-          src={sortedImages[selectedImageIndex].image_url}
+          src={buildImageUrl(sortedImages[selectedImageIndex].image_url)}
           alt={sortedImages[selectedImageIndex].alt_text}
           className="main-image"
           onError={(e) => {
@@ -125,7 +132,7 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
                 onClick={() => setSelectedImageIndex(index)}
               >
                 <img
-                  src={image.image_url}
+                  src={buildImageUrl(image.image_url)}
                   alt={image.alt_text}
                   className="carousel-image"
                   onError={(e) => {

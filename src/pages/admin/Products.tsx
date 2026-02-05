@@ -349,7 +349,11 @@ export default function Products() {
                     // Get thumbnail image for database products
                     const productImages = product.images || [];
                     const thumbnailImage = productImages.find((img: any) => img.is_thumbnail) || productImages[0];
-                    const imageUrl = thumbnailImage?.image_url || '/placeholder.svg';
+                    const apiBase = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '') : '';
+                    const imageUrlRaw = thumbnailImage?.image_url;
+                    const imageUrl = imageUrlRaw
+                      ? (imageUrlRaw.startsWith('http') ? imageUrlRaw : `${apiBase}${imageUrlRaw}`)
+                      : '/placeholder.svg';
                     
                     return (
                     <TableRow key={product.id} className="hover:bg-muted/50">
@@ -671,48 +675,72 @@ function ImageUploadForm({
       return;
     }
 
-    if (!currentProductId) {
-      toast.error("Please save the product first, then upload images");
-      return;
-    }
+    // If we have a product ID, upload to Railway Storage immediately
+    if (currentProductId) {
+      setIsUploading(true);
+      try {
+        const form = new FormData();
+        form.append("images", selectedFile);
 
-    setIsUploading(true);
-    try {
-      const form = new FormData();
-      form.append("images", selectedFile);
+        console.log("🚀 Uploading to Railway Storage - Product:", currentProductId, "File:", selectedFile.name);
 
-      console.log("🚀 Uploading to Railway Storage - Product:", currentProductId, "File:", selectedFile.name);
+        const response = await api.post(`/images/upload/${currentProductId}`, form, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
-      // Upload to backend Railway Storage endpoint
-      const response = await api.post(`/images/upload/${currentProductId}`, form, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+        console.log("✅ Upload response:", response.data);
 
-      console.log("✅ Upload response:", response.data);
-
-      // Backend returns uploaded images array
-      const uploadedImages = response.data.data?.images || [];
-      if (uploadedImages.length > 0) {
-        const imageUrl = uploadedImages[0].image_url;
-        console.log("✅ Image URL from Railway:", imageUrl);
-        onAdd(imageUrl, altText || "Product image");
-        toast.success("Image uploaded to Railway Storage successfully!");
-      } else {
-        throw new Error("No image URL returned from server");
+        const uploadedImages = response.data.data?.images || [];
+        if (uploadedImages.length > 0) {
+          const imageUrl = uploadedImages[0].image_url;
+          console.log("✅ Image URL from Railway:", imageUrl);
+          onAdd(imageUrl, altText || "Product image");
+          toast.success("Image uploaded to Railway Storage successfully!");
+        } else {
+          throw new Error("No image URL returned from server");
+        }
+        
+        setSelectedFile(null);
+        setFilePreview(null);
+        setAltText("");
+      } catch (error: any) {
+        console.error("❌ Upload error:", error.response?.data || error.message);
+        const errorMsg = error.response?.data?.message || error.message || "Failed to upload image";
+        toast.error(errorMsg);
+      } finally {
+        setIsUploading(false);
       }
-      
-      // Reset form
-      setSelectedFile(null);
-      setFilePreview(null);
-      setAltText("");
-    } catch (error: any) {
-      console.error("❌ Upload error:", error.response?.data || error.message);
-      const errorMsg = error.response?.data?.message || error.message || "Failed to upload image";
-      toast.error(errorMsg);
-    } finally {
-      setIsUploading(false);
+    } else {
+      // No product ID yet - upload temporarily to backend and return hosted URL
+      setIsUploading(true);
+      try {
+        const form = new FormData();
+        form.append('images', selectedFile);
+
+        const response = await api.post('/images/upload-temp', form, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        const uploaded = response.data.data?.images || [];
+        if (uploaded.length > 0) {
+          const imageUrl = uploaded[0].image_url;
+          onAdd(imageUrl, altText || 'Product image');
+          toast.success('Image uploaded successfully (temporary).');
+        } else {
+          throw new Error('No image URL returned from server');
+        }
+
+        setSelectedFile(null);
+        setFilePreview(null);
+        setAltText('');
+      } catch (error: any) {
+        console.error('Temp upload error:', error.response?.data || error.message);
+        toast.error(error.response?.data?.message || error.message || 'Failed to upload image');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -729,38 +757,27 @@ function ImageUploadForm({
 
   return (
     <div className="space-y-3">
-      {/* Show message if product not yet saved */}
-      {!currentProductId && (
-        <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs text-blue-900 font-medium">
-            💡 Tip: Save the product details first to enable image uploads
-          </p>
-        </div>
-      )}
-
-      {/* Upload Method Tabs */}
+      {/* Upload Method Tabs - Now always enabled */}
       <div className="flex gap-2 border-b">
         <button
           type="button"
           onClick={() => setUploadMethod("file")}
-          disabled={!currentProductId}
           className={`px-3 py-2 text-xs font-medium transition-colors ${
             uploadMethod === "file"
               ? "border-b-2 border-primary text-primary"
               : "text-muted-foreground hover:text-foreground"
-          } ${!currentProductId ? "opacity-50 cursor-not-allowed" : ""}`}
+          }`}
         >
           📁 Upload File
         </button>
         <button
           type="button"
           onClick={() => setUploadMethod("url")}
-          disabled={!currentProductId}
           className={`px-3 py-2 text-xs font-medium transition-colors ${
             uploadMethod === "url"
               ? "border-b-2 border-primary text-primary"
               : "text-muted-foreground hover:text-foreground"
-          } ${!currentProductId ? "opacity-50 cursor-not-allowed" : ""}`}
+          }`}
         >
           🔗 Use URL
         </button>

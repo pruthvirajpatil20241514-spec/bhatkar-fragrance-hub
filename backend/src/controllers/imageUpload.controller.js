@@ -186,6 +186,44 @@ exports.deleteProductImage = async (req, res) => {
   }
 };
 
+/**
+ * Upload images temporarily (no DB save) and return hosted URLs
+ * POST /api/images/upload-temp
+ */
+exports.uploadTempImages = async (req, res) => {
+  try {
+    const files = req.files;
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ status: 'error', message: 'No images provided' });
+    }
+
+    if (files.length > 4) {
+      return res.status(400).json({ status: 'error', message: 'Maximum 4 images allowed' });
+    }
+
+    const uploaded = [];
+    const { uploadToCloudinary } = require('../config/cloudinary.config');
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const fileName = `temp-${Date.now()}-${i}`;
+        const result = await uploadToCloudinary(file.buffer, fileName);
+        uploaded.push({ image_url: result.url, image_format: result.format });
+      } catch (err) {
+        console.error('Temp upload error:', err.message);
+        return res.status(500).json({ status: 'error', message: 'Failed to upload images' });
+      }
+    }
+
+    return res.status(201).json({ status: 'success', data: { images: uploaded } });
+  } catch (error) {
+    console.error('uploadTempImages error:', error);
+    return res.status(500).json({ status: 'error', message: 'Failed to upload images' });
+  }
+};
+
 // Helper function to extract public ID from Cloudinary URL
 function extractPublicIdFromUrl(url) {
   try {

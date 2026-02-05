@@ -41,7 +41,9 @@ function isStaticProduct(product: any): product is Product {
 function getDatabaseProductImage(product: DatabaseProduct): string {
   if (product.images && product.images.length > 0) {
     const thumbnail = product.images.find(img => img.is_thumbnail) || product.images[0];
-    return thumbnail.image_url;
+    const apiBase = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '') : '';
+    const url = thumbnail.image_url || '';
+    return url.startsWith('http') ? url : `${apiBase}${url}`;
   }
   return '/placeholder.svg';
 }

@@ -17,6 +17,15 @@ router.post(
   asyncHandler(imageUploadController.uploadProductImages)
 );
 
+// Temporary upload (no DB) - admin only
+// POST /api/images/upload-temp
+router.post(
+  '/upload-temp',
+  adminAuth,
+  upload.array('images', 4),
+  asyncHandler(imageUploadController.uploadTempImages)
+);
+
 // Delete product image (admin only)
 // DELETE /api/images/:productId/:imageId
 router.delete(
