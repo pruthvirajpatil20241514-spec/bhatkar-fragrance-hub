@@ -114,25 +114,35 @@ export default function Shop() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        console.log('🔄 Fetching from API: /products/with-images/all');
         const response = await api.get('/products/with-images/all');
+        console.log('✅ API returned status:', response.status);
         
         const newProducts = response.data.data || [];
+        console.log('📦 Loaded', newProducts.length, 'products from database');
+        if (newProducts.length > 0) {
+          console.log('First product:', { id: newProducts[0].id, name: newProducts[0].name, hasImages: !!newProducts[0].images });
+        }
         
         const prevCount = prevProductCountRef.current;
         
         if (newProducts.length !== prevCount) {
-          const diff = newProducts.length - prevCount;
-          if (diff > 0 && prevCount > 0) {
-            console.log(`✅ New products detected! ${newProducts.length} total (added ${diff})`);
+          if (prevCount === 0) {
+            console.log('📝 Initial load:', newProducts.length, 'products');
+          } else {
+            const diff = newProducts.length - prevCount;
+            console.log(`✅ New products! +${diff} (now ${newProducts.length} total)`);
             toast.success(`New products added! Showing ${newProducts.length} total.`);
           }
           prevProductCountRef.current = newProducts.length;
         }
         
+        console.log('🔄 Setting dbProducts state with', newProducts.length, 'items');
         setDbProducts(newProducts);
         setLoading(false);
+        console.log('✅ dbProducts state updated, should render now');
       } catch (error: any) {
-        console.error('Failed to fetch products:', error);
+        console.error('❌ Fetch failed:', error.message, error);
         setLoading(false);
       }
     };
@@ -478,6 +488,7 @@ export default function Shop() {
                 </div>
               ) : (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {console.log('🎨 Rendering', filteredProducts.length, 'products in grid')}
                   {filteredProducts.map((product, index) => (
                     <ProductCard
                       key={product.id}
