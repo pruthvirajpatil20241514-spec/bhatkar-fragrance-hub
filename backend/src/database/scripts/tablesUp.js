@@ -2,6 +2,7 @@ const { logger } = require('../../utils/logger');
 const { createTableUSers: createTableUSersQuery } = require('../queries');
 const { createTableProducts: createTableProductsQuery } = require('../products.queries');
 const { createTableOrders: createTableOrdersQuery } = require('../orders.queries');
+const { createTableProductImages: createTableProductImagesQuery } = require('../productImages.queries');
 
 (async () => {
     const pool = require('../../config/db.config');
@@ -17,6 +18,10 @@ const { createTableOrders: createTableOrdersQuery } = require('../orders.queries
         // Create orders table
         await pool.query(createTableOrdersQuery);
         logger.info('Table orders created!');
+        
+        // Create product_images table
+        await pool.query(createTableProductImagesQuery);
+        logger.info('Table product_images created!');
         
         process.exit(0);
     } catch (err) {

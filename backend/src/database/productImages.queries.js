@@ -1,3 +1,21 @@
+const createTableProductImages = `
+CREATE TABLE IF NOT EXISTS product_images (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    image_format VARCHAR(50),
+    alt_text VARCHAR(255),
+    image_order INT DEFAULT 1,
+    is_thumbnail BOOLEAN DEFAULT FALSE,
+    created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    KEY idx_product_id (product_id),
+    KEY idx_image_order (product_id, image_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+`;
+
 const createProductImage = `
 INSERT INTO product_images (product_id, image_url, image_format, alt_text, image_order, is_thumbnail)
 VALUES (?, ?, ?, ?, ?, ?)
@@ -67,6 +85,7 @@ WHERE product_id = ?
 `;
 
 module.exports = {
+  createTableProductImages,
   createProductImage,
   getProductImages,
   getProductWithImages,
