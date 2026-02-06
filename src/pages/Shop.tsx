@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Filter, SlidersHorizontal, X, Search } from "lucide-react";
@@ -89,30 +89,44 @@ export default function Shop() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [dbProducts, setDbProducts] = useState<DatabaseProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const prevProductCountRef = useRef(0);
 
   // Fetch products from database with images
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        setLoading(true);
         const response = await api.get('/products/with-images/all');
-        setDbProducts(response.data.data || []);
-        if (response.data.data && response.data.data.length > 0) {
-          toast.success(`Loaded ${response.data.data.length} products`);
+        const newProducts = response.data.data || [];
+        const prevCount = prevProductCountRef.current;
+        
+        if (newProducts.length !== prevCount) {
+          const diff = newProducts.length - prevCount;
+          if (diff > 0) {
+            console.log(`✅ New products detected! ${newProducts.length} total (added ${diff})`);
+            toast.success(`New products added! Showing ${newProducts.length} total.`);
+          }
+          prevProductCountRef.current = newProducts.length;
         }
+        
+        setDbProducts(newProducts);
+        setLoading(false);
       } catch (error: any) {
         console.error('Failed to fetch products:', error);
-        console.error('Error details:', error.response?.status, error.response?.data);
-        toast.error(error.response?.data?.message || 'Failed to load products from database');
-        // Fall back to static products if API fails
-        setDbProducts([]);
-      } finally {
         setLoading(false);
       }
     };
 
+    // Fetch immediately on mount
     fetchProducts();
-  }, []);
+
+    // Poll for new products every 15 seconds
+    const pollInterval = setInterval(() => {
+      fetchProducts();
+    }, 15000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(pollInterval);
+  }, []); // Empty dependency array - effect runs once on mount
 
   const filteredProducts = useMemo(() => {
     // Use database products if available, otherwise fall back to static products
