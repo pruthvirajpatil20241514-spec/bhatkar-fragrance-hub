@@ -34,6 +34,8 @@ interface Product {
   name: string;
   brand: string;
   price: number;
+  quantity_ml: number;
+  quantity_unit: string;
   category: "Men" | "Women" | "Unisex";
   concentration: "EDP" | "EDT" | "Parfum";
   description: string;
@@ -52,6 +54,8 @@ interface FormData {
   name: string;
   brand: string;
   price: string;
+  quantity_ml: string;
+  quantity_unit: string;
   category: "Men" | "Women" | "Unisex" | "";
   concentration: "EDP" | "EDT" | "Parfum" | "";
   description: string;
@@ -80,6 +84,8 @@ export default function Products() {
     name: "",
     brand: "",
     price: "",
+    quantity_ml: "100",
+    quantity_unit: "ml",
     category: "",
     concentration: "",
     description: "",
@@ -122,6 +128,8 @@ export default function Products() {
         name: product.name,
         brand: product.brand,
         price: product.price.toString(),
+        quantity_ml: product.quantity_ml.toString(),
+        quantity_unit: product.quantity_unit,
         category: product.category,
         concentration: product.concentration,
         description: product.description,
@@ -135,6 +143,8 @@ export default function Products() {
         name: "",
         brand: "",
         price: "",
+        quantity_ml: "100",
+        quantity_unit: "ml",
         category: "",
         concentration: "",
         description: "",
@@ -170,6 +180,8 @@ export default function Products() {
       name: "",
       brand: "",
       price: "",
+      quantity_ml: "100",
+      quantity_unit: "ml",
       category: "",
       concentration: "",
       description: "",
@@ -195,6 +207,8 @@ export default function Products() {
         name: formData.name,
         brand: formData.brand,
         price: parseFloat(formData.price),
+        quantity_ml: parseInt(formData.quantity_ml) || 100,
+        quantity_unit: formData.quantity_unit || 'ml',
         category: formData.category,
         concentration: formData.concentration,
         description: formData.description,
@@ -331,6 +345,7 @@ export default function Products() {
                   <TableHead>Product Name</TableHead>
                   <TableHead>Brand</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>Quantity</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Concentration</TableHead>
                   <TableHead>Stock</TableHead>
@@ -340,7 +355,7 @@ export default function Products() {
               <TableBody>
                 {products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No products found. Create one to get started!
                     </TableCell>
                   </TableRow>
@@ -372,6 +387,9 @@ export default function Products() {
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell>{product.brand}</TableCell>
                       <TableCell>₹{product.price.toFixed(2)}</TableCell>
+                      <TableCell className="text-sm">
+                        {product.quantity_ml}{product.quantity_unit}
+                      </TableCell>
                       <TableCell>
                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                           {product.category}
@@ -426,15 +444,16 @@ export default function Products() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle>{editingId ? "Edit Product" : "Add New Product"}</DialogTitle>
             <DialogDescription>
               {editingId ? "Update the product details" : "Create a new fragrance product"}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="overflow-y-auto flex-1 px-4">
+            <form id="productForm" onSubmit={handleSubmit} className="space-y-4 pr-4">
             {/* Name */}
             <div>
               <label className="text-sm font-medium block mb-1">Product Name *</label>
@@ -468,6 +487,37 @@ export default function Products() {
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 disabled={isSubmitting}
               />
+            </div>
+
+            {/* Quantity */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2">
+                <label className="text-sm font-medium block mb-1">Quantity (ML)</label>
+                <Input
+                  type="number"
+                  placeholder="100"
+                  value={formData.quantity_ml}
+                  onChange={(e) => setFormData({ ...formData, quantity_ml: e.target.value })}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Unit</label>
+                <Select
+                  value={formData.quantity_unit}
+                  onValueChange={(value: any) => setFormData({ ...formData, quantity_unit: value })}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ml">ML</SelectItem>
+                    <SelectItem value="g">G</SelectItem>
+                    <SelectItem value="oz">OZ</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Category */}
@@ -587,9 +637,11 @@ export default function Products() {
                 )}
               </div>
             </div>
+            </form>
+          </div>
 
-            {/* Actions */}
-            <div className="flex gap-2 justify-end pt-4">
+          {/* Actions - Fixed at bottom */}
+          <div className="flex gap-2 justify-end pt-4 border-t shrink-0">
               <Button
                 type="button"
                 variant="outline"
@@ -598,7 +650,7 @@ export default function Products() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="gap-2">
+              <Button form="productForm" type="submit" disabled={isSubmitting} className="gap-2">
                 {isSubmitting && <Loader className="h-4 w-4 animate-spin" />}
                 {editingId ? "Update Product" : "Add Product"}
               </Button>
@@ -794,7 +846,7 @@ function ImageUploadForm({
               setIsDragging(true);
             }}
             onDragLeave={() => setIsDragging(false)}
-            className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+            className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
               isDragging
                 ? "border-primary bg-primary/5"
                 : "border-input bg-muted/50 hover:border-primary/50"
@@ -814,9 +866,9 @@ function ImageUploadForm({
                   <img
                     src={filePreview}
                     alt="Preview"
-                    className="h-20 w-20 object-cover rounded mx-auto"
+                    className="h-16 w-16 object-cover rounded mx-auto flex-shrink-0"
                   />
-                  <p className="text-xs font-medium text-foreground">
+                  <p className="text-xs font-medium text-foreground line-clamp-1">
                     {selectedFile?.name}
                   </p>
                   <p className="text-xs text-muted-foreground">

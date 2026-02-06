@@ -15,10 +15,12 @@ const convertProduct = (product) => ({
 });
 
 class Product {
-    constructor(name, brand, price, category, concentration, description, stock) {
+    constructor(name, brand, price, quantity_ml, quantity_unit, category, concentration, description, stock) {
         this.name = name;
         this.brand = brand;
         this.price = price;
+        this.quantity_ml = quantity_ml;
+        this.quantity_unit = quantity_unit;
         this.category = category;
         this.concentration = concentration;
         this.description = description;
@@ -32,6 +34,8 @@ class Product {
                     newProduct.name,
                     newProduct.brand,
                     newProduct.price,
+                    newProduct.quantity_ml,
+                    newProduct.quantity_unit,
                     newProduct.category,
                     newProduct.concentration,
                     newProduct.description,
@@ -78,6 +82,8 @@ class Product {
                     updatedProduct.name,
                     updatedProduct.brand,
                     updatedProduct.price,
+                    updatedProduct.quantity_ml,
+                    updatedProduct.quantity_unit,
                     updatedProduct.category,
                     updatedProduct.concentration,
                     updatedProduct.description,

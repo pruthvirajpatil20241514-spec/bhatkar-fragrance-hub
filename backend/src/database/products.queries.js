@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS products (
     name VARCHAR(255) NOT NULL,
     brand VARCHAR(100) NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
+    quantity_ml INT DEFAULT 100,
+    quantity_unit VARCHAR(10) DEFAULT 'ml',
     category ENUM('Men', 'Women', 'Unisex') NOT NULL,
     concentration ENUM('EDP', 'EDT', 'Parfum') NOT NULL,
     description TEXT,
@@ -14,8 +16,8 @@ CREATE TABLE IF NOT EXISTS products (
 `;
 
 const createProduct = `
-INSERT INTO products (name, brand, price, category, concentration, description, stock)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO products (name, brand, price, quantity_ml, quantity_unit, category, concentration, description, stock)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 const getAllProducts = `
@@ -28,7 +30,7 @@ SELECT * FROM products WHERE id = ?
 
 const updateProduct = `
 UPDATE products 
-SET name = ?, brand = ?, price = ?, category = ?, concentration = ?, description = ?, stock = ?
+SET name = ?, brand = ?, price = ?, quantity_ml = ?, quantity_unit = ?, category = ?, concentration = ?, description = ?, stock = ?
 WHERE id = ?
 `;
 
