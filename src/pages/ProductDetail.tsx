@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import api from "@/lib/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Star,
@@ -25,15 +26,80 @@ import { toast } from "sonner";
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const product = products.find((p) => p.id === id);
+  const localProduct = products.find((p) => p.id === id);
   const { addItem } = useCart();
 
+  const [remoteProduct, setRemoteProduct] = useState<any | null>(null);
+  const [loadingRemote, setLoadingRemote] = useState(false);
+  const [remoteError, setRemoteError] = useState<string | null>(null);
+
+  const product = localProduct || remoteProduct;
+
   const [selectedSize, setSelectedSize] = useState(
-    product?.sizes[product.sizes.length - 1] || { ml: 100, price: 0 }
+    // if local product exists use its sizes, otherwise fallback to a normalized remote product
+    (localProduct && localProduct.sizes[localProduct.sizes.length - 1]) || { ml: (remoteProduct?.quantity_ml ?? 100), price: (remoteProduct?.price ?? 0) }
   );
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  useEffect(() => {
+    if (localProduct) return; // nothing to fetch
+    if (!id) return;
+
+    let mounted = true;
+    setLoadingRemote(true);
+    setRemoteError(null);
+
+    api.get(`/products/${id}/with-images`)
+      .then((res) => {
+        if (!mounted) return;
+        const p = res.data?.data || res.data;
+        if (!p) {
+          setRemoteError('Product not found');
+          return;
+        }
+        // Normalize backend product shape into the UI-friendly product object
+        const normalized: any = {
+          id: String(p.id),
+          name: p.name,
+          description: p.description || p.short_description || '',
+          price: p.price || 0,
+          originalPrice: p.original_price || p.originalPrice,
+          images: Array.isArray(p.images)
+            ? p.images.map((img: any) => img.image_url || img.url || img)
+            : [],
+          category: p.category || 'unisex',
+          fragranceType: p.fragranceType || p.fragrance_type || 'fresh',
+          notes: p.notes || { top: [], middle: [], base: [] },
+          sizes: p.sizes || [{ ml: p.quantity_ml || 100, price: p.price || 0 }],
+          longevity: p.longevity || 'moderate',
+          rating: p.rating || 4.5,
+          reviewCount: p.reviewCount || p.review_count || 0,
+          inStock: (p.stock ?? p.quantity ?? 0) > 0,
+          // keep DB specific fields too
+          quantity_ml: p.quantity_ml,
+          quantity_unit: p.quantity_unit,
+          brand: p.brand,
+          stock: p.stock,
+        };
+
+        setRemoteProduct(normalized);
+        // set default selected size from normalized product
+        setSelectedSize(normalized.sizes[normalized.sizes.length - 1] || { ml: normalized.quantity_ml || 100, price: normalized.price || 0 });
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setRemoteError(err?.response?.data?.message || err.message || 'Failed to load product');
+      })
+      .finally(() => {
+        if (mounted) setLoadingRemote(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [id, localProduct]);
 
   if (!product) {
     return (
@@ -158,9 +224,18 @@ export default function ProductDetail() {
               </p>
 
               {/* Name */}
-              <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
+              <h1 className="font-display text-4xl md:text-5xl font-bold mb-2">
                 {product.name}
               </h1>
+
+              {/* Net Quantity / Size display similar to mobile screenshot */}
+              <div className="text-sm text-muted-foreground mb-4">
+                {product.quantity_ml ? (
+                  <span>Net quantity: 1 pc ({product.quantity_ml}{product.quantity_unit || 'ml'})</span>
+                ) : (
+                  <span>Net quantity: 1 pc ({selectedSize?.ml || 100} ml)</span>
+                )}
+              </div>
 
               {/* Rating */}
               <div className="flex items-center gap-2 mb-6">
