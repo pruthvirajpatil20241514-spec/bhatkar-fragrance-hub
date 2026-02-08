@@ -464,7 +464,18 @@ export default function Products() {
                           {product.concentration}
                         </span>
                       </TableCell>
-                      <TableCell>{product.stock}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-block px-3 py-1 rounded text-xs font-semibold ${
+                            product.stock > 10 ? 'bg-green-100 text-green-800' :
+                            product.stock > 3 ? 'bg-yellow-100 text-yellow-800' :
+                            product.stock > 0 ? 'bg-orange-100 text-orange-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {product.stock}
+                          </span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button

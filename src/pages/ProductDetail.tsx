@@ -101,37 +101,43 @@ export default function ProductDetail() {
           const variantRes = await api.get(`/variants/product/${p.id}`);
           if (!mounted) return;
           
-          const variantData = variantRes?.data?.data || [];
+          let variantData = variantRes?.data?.data || [];
+          
+          // Filter out invalid variants and sort by value
+          variantData = variantData.filter(v => v && v.id).sort((a, b) => a.variant_value - b.variant_value);
+          
           setVariants(variantData);
           
           // Set first variant as selected
           if (variantData.length > 0) {
             setSelectedVariant(variantData[0]);
           } else {
-            // No variants found - use product's base stock (NOT 0)
-            setSelectedVariant({
+            // No variants found - use product's base characteristics
+            const fallbackVariant = {
               id: null,
               product_id: p.id,
               variant_name: `${p.quantity_ml || 100}${p.quantity_unit || 'ml'}`,
               variant_value: p.quantity_ml || 100,
               variant_unit: p.quantity_unit || 'ml',
               price: p.price || 0,
-              stock: p.stock || 0 // Use actual product stock, not defaulting to 0
-            });
+              stock: p.stock || 0
+            };
+            setSelectedVariant(fallbackVariant);
           }
         } catch (variantErr) {
           if (!mounted) return;
-          // Variants endpoint might not exist or failed - use product's base stock
-          console.warn('Could not fetch variants, using product base stock:', p.stock);
-          setSelectedVariant({
+          // Variants endpoint failed - use product's base characteristics
+          console.warn('Could not fetch variants, using product base:', { price: p.price, stock: p.stock });
+          const fallbackVariant = {
             id: null,
             product_id: p.id,
             variant_name: `${p.quantity_ml || 100}${p.quantity_unit || 'ml'}`,
             variant_value: p.quantity_ml || 100,
             variant_unit: p.quantity_unit || 'ml',
             price: p.price || 0,
-            stock: p.stock || 0 // Use actual product stock
-          });
+            stock: p.stock || 0
+          };
+          setSelectedVariant(fallbackVariant);
         }
       } catch (err: any) {
         if (!mounted) return;
