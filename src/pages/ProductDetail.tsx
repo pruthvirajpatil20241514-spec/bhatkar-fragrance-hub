@@ -51,7 +51,12 @@ export default function ProductDetail() {
   const maxQuantity = Math.min(10, availableStock); // Max 10 or available stock, whichever is less
   
   // Display images: use variant-specific if available, else product images
-  const displayImages = variantImages.length > 0 ? variantImages.map(img => img.image_url) : product?.images || [];
+  // Ensure we always have strings, never objects
+  const displayImages = variantImages.length > 0 
+    ? variantImages.map(img => typeof img === 'string' ? img : img.image_url)
+    : (Array.isArray(product?.images) 
+        ? product.images.filter((img): img is string => typeof img === 'string')
+        : []);
 
   useEffect(() => {
     if (localProduct) return; // nothing to fetch
@@ -97,6 +102,7 @@ export default function ProductDetail() {
           quantity_unit: p.quantity_unit,
           brand: p.brand,
           stock: p.stock || 0,
+          is_best_seller: p.is_best_seller || false,
         };
 
         setRemoteProduct(normalized);
