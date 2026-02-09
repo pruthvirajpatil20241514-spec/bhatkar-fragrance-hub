@@ -40,6 +40,7 @@ interface Product {
   concentration: "EDP" | "EDT" | "Parfum";
   description: string;
   stock: number;
+  is_best_seller?: boolean;
   created_on: string;
   images?: Array<{
     id: number;
@@ -60,6 +61,7 @@ interface FormData {
   concentration: "EDP" | "EDT" | "Parfum" | "";
   description: string;
   stock: string;
+  is_best_seller: boolean;
 }
 
 interface ProductImage {
@@ -90,6 +92,7 @@ export default function Products() {
     concentration: "",
     description: "",
     stock: "0",
+    is_best_seller: false,
   });
 
   const [images, setImages] = useState<ProductImage[]>([]);
@@ -136,6 +139,7 @@ export default function Products() {
         concentration: product.concentration,
         description: product.description,
         stock: product.stock.toString(),
+        is_best_seller: product.is_best_seller || false,
       });
       // Load existing images and variants for product
       loadProductImages(product.id);
@@ -153,6 +157,7 @@ export default function Products() {
         concentration: "",
         description: "",
         stock: "0",
+        is_best_seller: false,
       });
       setImages([]);
       setEditVariants([]);
@@ -235,6 +240,7 @@ export default function Products() {
         concentration: formData.concentration,
         description: formData.description,
         stock: parseInt(formData.stock) || 0,
+        is_best_seller: formData.is_best_seller,
       };
 
       let productId: number;
@@ -413,13 +419,14 @@ export default function Products() {
                   <TableHead>Category</TableHead>
                   <TableHead>Concentration</TableHead>
                   <TableHead>Stock</TableHead>
+                  <TableHead>Best Seller</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       No products found. Create one to get started!
                     </TableCell>
                   </TableRow>
@@ -475,6 +482,17 @@ export default function Products() {
                             {product.stock}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {product.is_best_seller ? (
+                          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                            ⭐ Yes
+                          </span>
+                        ) : (
+                          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                            No
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -656,6 +674,21 @@ export default function Products() {
                 className="w-full px-3 py-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 rows={4}
               />
+            </div>
+
+            {/* Best Seller Flag */}
+            <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+              <input
+                type="checkbox"
+                id="is_best_seller"
+                checked={formData.is_best_seller}
+                onChange={(e) => setFormData({ ...formData, is_best_seller: e.target.checked })}
+                disabled={isSubmitting}
+                className="w-4 h-4 rounded cursor-pointer"
+              />
+              <label htmlFor="is_best_seller" className="text-sm font-medium cursor-pointer flex items-center gap-1">
+                ⭐ Best Seller
+              </label>
             </div>
 
             {/* Product Images */}

@@ -15,7 +15,7 @@ const convertProduct = (product) => ({
 });
 
 class Product {
-    constructor(name, brand, price, quantity_ml, quantity_unit, category, concentration, description, stock) {
+    constructor(name, brand, price, quantity_ml, quantity_unit, category, concentration, description, stock, is_best_seller = false) {
         this.name = name;
         this.brand = brand;
         this.price = price;
@@ -25,6 +25,7 @@ class Product {
         this.concentration = concentration;
         this.description = description;
         this.stock = stock;
+        this.is_best_seller = is_best_seller;
     }
 
     static async create(newProduct) {
@@ -39,7 +40,8 @@ class Product {
                     newProduct.category,
                     newProduct.concentration,
                     newProduct.description,
-                    newProduct.stock
+                    newProduct.stock,
+                    newProduct.is_best_seller || false
                 ]);
             return {
                 id: result[0].insertId,
@@ -88,6 +90,7 @@ class Product {
                     updatedProduct.concentration,
                     updatedProduct.description,
                     updatedProduct.stock,
+                    updatedProduct.is_best_seller || false,
                     id
                 ]);
             if (result[0].affectedRows === 0) {
