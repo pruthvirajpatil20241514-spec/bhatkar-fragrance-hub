@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductCard } from "@/components/products/ProductCard";
+import ProductReviews from "@/components/reviews/ProductReviews";
 import { products } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice, cn } from "@/lib/utils";
@@ -333,9 +334,16 @@ export default function ProductDetail() {
               </p>
 
               {/* Name */}
-              <h1 className="font-display text-4xl md:text-5xl font-bold mb-2">
-                {product.name}
-              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="font-display text-4xl md:text-5xl font-bold">
+                  {product.name}
+                </h1>
+                {product.is_best_seller && (
+                  <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 text-base px-3 py-1 flex items-center gap-1">
+                    ⭐ Best Seller
+                  </Badge>
+                )}
+              </div>
 
               {/* Net Quantity / Size display similar to mobile screenshot */}
               <div className="text-sm text-muted-foreground mb-4">
@@ -633,16 +641,7 @@ export default function ProductDetail() {
             </TabsContent>
 
             <TabsContent value="reviews" className="mt-0">
-              <div className="max-w-2xl mx-auto text-center py-12">
-                <Star className="h-12 w-12 text-primary mx-auto mb-4" />
-                <h3 className="font-display text-2xl font-semibold mb-2">
-                  {product.reviewCount} Reviews
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  Average rating: {product.rating} out of 5 stars
-                </p>
-                <Button variant="gold-outline">Write a Review</Button>
-              </div>
+              <ProductReviews productId={product.id} />
             </TabsContent>
           </Tabs>
         </div>
