@@ -22,6 +22,7 @@ import AdminProducts from "./pages/admin/Products";
 import AdminOrders from "./pages/admin/Orders";
 import AdminManage from "./pages/admin/Manage";
 import AdminProductImageManager from "./pages/AdminProductImageManager";
+import AdminReviews from "./pages/admin/Reviews";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,15 @@ const App = () => (
                   element={
                     <ProtectedRoute requiredRole="admin">
                       <AdminProductImageManager />
+
+                                    <Route
+                                      path="/admin/reviews"
+                                      element={
+                                        <ProtectedRoute requiredRole="admin">
+                                          <AdminReviews />
+                                        </ProtectedRoute>
+                                      }
+                                    />
                     </ProtectedRoute>
                   }
                 />

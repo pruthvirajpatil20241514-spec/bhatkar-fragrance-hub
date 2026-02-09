@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { LogOut, Package, ShoppingCart, TrendingUp, Plus, BarChart3 } from "lucide-react";
+import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -137,6 +138,22 @@ export default function AdminDashboard() {
             </Card>
 
             {/* Orders Management */}
+                        {/* Reviews Management */}
+                        <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer hover:border-primary"
+                          onClick={() => navigate("/admin/reviews")}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="bg-yellow-500/10 p-4 rounded-lg">
+                              <Star className="h-6 w-6 text-yellow-500" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold">Reviews</h3>
+                              <p className="text-sm text-muted-foreground">Manage ratings</p>
+                            </div>
+                          </div>
+                        </Card>
+
+                        {/* Orders Management */}
             <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer hover:border-primary"
               onClick={() => navigate("/admin/orders")}
             >
