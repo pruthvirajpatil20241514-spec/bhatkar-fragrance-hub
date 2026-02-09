@@ -91,6 +91,54 @@ async function runMigrations() {
             logger.info('✓ product_variants table already exists');
         }
 
+        // Check and add is_best_seller column if it doesn't exist
+        const checkBestSellerQuery = `
+            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'products' AND TABLE_SCHEMA = DATABASE() 
+            AND COLUMN_NAME = 'is_best_seller'
+        `;
+        
+        const [bestSellerColumns] = await db.query(checkBestSellerQuery);
+        
+        if (bestSellerColumns.length === 0) {
+            logger.info('🔄 Adding is_best_seller column...');
+            await db.query(`ALTER TABLE products ADD COLUMN is_best_seller BOOLEAN DEFAULT 0`);
+            logger.info('✓ Added is_best_seller column');
+        } else {
+            logger.info('✓ is_best_seller column already exists');
+        }
+
+        // Check and create reviews table if it doesn't exist
+        const checkReviewsQuery = `
+            SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reviews'
+        `;
+        
+        const [reviewsTable] = await db.query(checkReviewsQuery);
+        
+        if (reviewsTable.length === 0) {
+            logger.info('🔄 Creating reviews table...');
+            await db.query(`
+                CREATE TABLE reviews (
+                  id INT PRIMARY KEY AUTO_INCREMENT,
+                  product_id INT NOT NULL,
+                  reviewer_name VARCHAR(255) NOT NULL,
+                  rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+                  review_text TEXT NOT NULL,
+                  verified_purchase BOOLEAN DEFAULT 0,
+                  is_approved BOOLEAN DEFAULT 1,
+                  created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+                  updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                  INDEX idx_product (product_id),
+                  INDEX idx_rating (rating)
+                )
+            `);
+            logger.info('✓ Created reviews table');
+        } else {
+            logger.info('✓ reviews table already exists');
+        }
+
     } catch (error) {
         logger.warn(`Migration check failed: ${error.message}. This may be normal if the database is not ready yet.`);
     }
