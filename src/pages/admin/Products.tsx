@@ -254,20 +254,60 @@ export default function Products() {
         // Create product
         const response = await api.post("/products", payload);
         productId = response.data.data.id;
-        setEditingId(productId); // Enable image uploads after product creation
+        setEditingId(productId);
       }
 
-      // Handle images - add new ones
+      // Handle images - upload data URLs to Railway, save URLs to database
       if (images.length > 0) {
         const newImages = images.filter(img => !img.id); // Only new images
         if (newImages.length > 0) {
+          // Process images: upload data URLs to Railway, keep existing URLs
+          const processedImages = await Promise.all(
+            newImages.map(async (img, index) => {
+              let finalUrl = img.imageUrl;
+
+              // If it's a data URL (from local file upload), upload to Railway
+              if (img.imageUrl.startsWith('data:')) {
+                try {
+                  console.log(`📤 Uploading local image ${index + 1} to Railway...`);
+                  
+                  // Convert data URL to blob
+                  const response = await fetch(img.imageUrl);
+                  const blob = await response.blob();
+                  
+                  // Upload to Railway
+                  const form = new FormData();
+                  form.append("images", blob, `product-image-${index + 1}.jpg`);
+                  
+                  const uploadResponse = await api.post(`/images/upload/${productId}`, form, {
+                    headers: {
+                      "Content-Type": "multipart/form-data",
+                    },
+                  });
+                  
+                  const uploadedImages = uploadResponse.data.data?.images || [];
+                  if (uploadedImages.length > 0) {
+                    finalUrl = uploadedImages[0].image_url;
+                    console.log(`✅ Image uploaded to Railway: ${finalUrl}`);
+                  }
+                } catch (uploadErr: any) {
+                  console.error(`❌ Failed to upload image ${index + 1}:`, uploadErr.message);
+                  throw new Error(`Failed to upload image: ${uploadErr.message}`);
+                }
+              }
+
+              return {
+                imageUrl: finalUrl,
+                altText: img.altText,
+                imageOrder: index + 1,
+                isThumbnail: index === 0
+              };
+            })
+          );
+
+          // Save to database
           const imagePayload = {
-            images: newImages.map((img, index) => ({
-              imageUrl: img.imageUrl,
-              altText: img.altText,
-              imageOrder: index + 1,
-              isThumbnail: index === 0
-            }))
+            images: processedImages
           };
           await api.post(`/products/${productId}/images`, imagePayload);
         }
@@ -277,7 +317,8 @@ export default function Products() {
       handleCloseDialog();
       toast.success(editingId ? "Product updated successfully!" : "Product created successfully!");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to save product");
+      console.error("Submit error:", err);
+      setError(err.response?.data?.message || err.message || "Failed to save product");
     } finally {
       setIsSubmitting(false);
     }
