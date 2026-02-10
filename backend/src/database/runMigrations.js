@@ -32,6 +32,8 @@ async function runMigrations() {
           review_text TEXT NOT NULL,
           verified_purchase BOOLEAN DEFAULT 0,
           is_approved BOOLEAN DEFAULT 1,
+          is_featured BOOLEAN DEFAULT 0,
+          is_active BOOLEAN DEFAULT 1,
           created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
           updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
           FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,

@@ -118,22 +118,24 @@ async function runMigrations() {
         
         if (reviewsTable.length === 0) {
             logger.info('🔄 Creating reviews table...');
-            await db.query(`
-                CREATE TABLE reviews (
-                  id INT PRIMARY KEY AUTO_INCREMENT,
-                  product_id INT NOT NULL,
-                  reviewer_name VARCHAR(255) NOT NULL,
-                  rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
-                  review_text TEXT NOT NULL,
-                  verified_purchase BOOLEAN DEFAULT 0,
-                  is_approved BOOLEAN DEFAULT 1,
-                  created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
-                  updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-                  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-                  INDEX idx_product (product_id),
-                  INDEX idx_rating (rating)
-                )
-            `);
+                        await db.query(`
+                                CREATE TABLE reviews (
+                                    id INT PRIMARY KEY AUTO_INCREMENT,
+                                    product_id INT NOT NULL,
+                                    reviewer_name VARCHAR(255) NOT NULL,
+                                    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+                                    review_text TEXT NOT NULL,
+                                    verified_purchase BOOLEAN DEFAULT 0,
+                                    is_approved BOOLEAN DEFAULT 1,
+                                    is_featured BOOLEAN DEFAULT 0,
+                                    is_active BOOLEAN DEFAULT 1,
+                                    created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+                                    updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                                    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                                    INDEX idx_product (product_id),
+                                    INDEX idx_rating (rating)
+                                )
+                        `);
             logger.info('✓ Created reviews table');
         } else {
             logger.info('✓ reviews table already exists');

@@ -1,12 +1,12 @@
 // Reviews database queries
 const db = require('../config/db.config');
 
-// Get product reviews (approved only)
+// Get product reviews (approved and active only)
 const getProductReviews = async (productId) => {
   const query = `
-    SELECT id, product_id, reviewer_name, rating, review_text, verified_purchase, created_at
+    SELECT id, product_id, reviewer_name, rating, review_text, verified_purchase, is_featured, is_active, created_at
     FROM reviews
-    WHERE product_id = ? AND is_approved = 1
+    WHERE product_id = ? AND is_approved = 1 AND is_active = 1
     ORDER BY created_at DESC
   `;
   const [reviews] = await db.query(query, [productId]);
@@ -25,7 +25,7 @@ const getReviewStats = async (productId) => {
       SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as two_star,
       SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as one_star
     FROM reviews
-    WHERE product_id = ? AND is_approved = 1
+    WHERE product_id = ? AND is_approved = 1 AND is_active = 1
   `;
   const [stats] = await db.query(query, [productId]);
   return stats[0] || { total_reviews: 0, average_rating: 0 };
@@ -34,7 +34,7 @@ const getReviewStats = async (productId) => {
 // Get single review by ID
 const getReviewById = async (reviewId) => {
   const query = `
-    SELECT id, product_id, reviewer_name, rating, review_text, verified_purchase, created_at
+    SELECT id, product_id, reviewer_name, rating, review_text, verified_purchase, is_featured, is_active, is_approved, created_at
     FROM reviews
     WHERE id = ?
   `;
@@ -45,8 +45,8 @@ const getReviewById = async (reviewId) => {
 // Create a new review
 const createReview = async (reviewData) => {
   const query = `
-    INSERT INTO reviews (product_id, reviewer_name, rating, review_text, verified_purchase, is_approved)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO reviews (product_id, reviewer_name, rating, review_text, verified_purchase, is_approved, is_featured, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const [result] = await db.query(query, [
     reviewData.product_id,
@@ -54,7 +54,9 @@ const createReview = async (reviewData) => {
     reviewData.rating,
     reviewData.review_text,
     reviewData.verified_purchase || 0,
-    1 // Default to approved
+    reviewData.is_approved !== undefined ? reviewData.is_approved : 1,
+    reviewData.is_featured || 0,
+    reviewData.is_active !== undefined ? reviewData.is_active : 1
   ]);
   return { id: result.insertId, ...reviewData };
 };
@@ -71,7 +73,7 @@ const deleteReview = async (reviewId) => {
 // Get all reviews for a product (including unapproved - for admin)
 const getAllProductReviews = async (productId) => {
   const query = `
-    SELECT id, product_id, reviewer_name, rating, review_text, verified_purchase, is_approved, created_at
+    SELECT id, product_id, reviewer_name, rating, review_text, verified_purchase, is_approved, is_featured, is_active, created_at
     FROM reviews
     WHERE product_id = ?
     ORDER BY created_at DESC
@@ -98,6 +100,33 @@ const rejectReview = async (reviewId) => {
   return { affectedRows: result.affectedRows };
 };
 
+// Mark review featured/unfeatured (admin)
+const setFeatured = async (reviewId, featured) => {
+  const query = `UPDATE reviews SET is_featured = ? WHERE id = ?`;
+  const [result] = await db.query(query, [featured ? 1 : 0, reviewId]);
+  return { affectedRows: result.affectedRows };
+};
+
+// Set review active/inactive (admin)
+const setActive = async (reviewId, active) => {
+  const query = `UPDATE reviews SET is_active = ? WHERE id = ?`;
+  const [result] = await db.query(query, [active ? 1 : 0, reviewId]);
+  return { affectedRows: result.affectedRows };
+};
+
+// Get featured reviews for product (public) limited to 3
+const getFeaturedReviews = async (productId, limit = 3) => {
+  const query = `
+    SELECT id, product_id, reviewer_name, rating, review_text, verified_purchase, is_featured, created_at
+    FROM reviews
+    WHERE product_id = ? AND is_approved = 1 AND is_active = 1 AND is_featured = 1
+    ORDER BY created_at DESC
+    LIMIT ?
+  `;
+  const [reviews] = await db.query(query, [productId, limit]);
+  return reviews;
+};
+
 module.exports = {
   getProductReviews,
   getReviewStats,
@@ -106,5 +135,8 @@ module.exports = {
   deleteReview,
   getAllProductReviews,
   approveReview,
-  rejectReview
+  rejectReview,
+  setFeatured,
+  setActive,
+  getFeaturedReviews
 };

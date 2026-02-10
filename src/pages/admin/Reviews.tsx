@@ -18,6 +18,8 @@ interface Review {
   rating: number;
   review_text: string;
   verified_purchase: boolean;
+  is_featured?: boolean;
+  is_active?: boolean;
   created_at: string;
 }
 
@@ -30,12 +32,16 @@ export default function AdminReviews() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<{ reviewer_name?: string; rating?: number; review_text?: string; verified_purchase?: boolean }>({});
 
   const [formData, setFormData] = useState({
     reviewer_name: "",
     rating: 5,
     review_text: "",
     verified_purchase: true,
+    is_featured: false,
+    is_active: true,
   });
 
   // Redirect if not admin
@@ -69,7 +75,7 @@ export default function AdminReviews() {
     if (!selectedProductId) return;
     try {
       setLoading(true);
-      const response = await api.get(`/reviews/product/${selectedProductId}`);
+      const response = await api.get(`/reviews/product/${selectedProductId}/all`);
       setReviews(response.data.data || []);
     } catch (error) {
       console.error("Failed to load reviews:", error);
@@ -107,6 +113,8 @@ export default function AdminReviews() {
         rating: 5,
         review_text: "",
         verified_purchase: true,
+        is_featured: false,
+        is_active: true,
       });
 
       await loadReviews();
@@ -115,6 +123,36 @@ export default function AdminReviews() {
       toast.error(error.response?.data?.message || "Failed to add review");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleToggleFeatured = async (reviewId: number, value: boolean) => {
+    try {
+      await api.patch(`/reviews/${reviewId}/featured`, { featured: value });
+      toast.success('Updated featured flag');
+      await loadReviews();
+    } catch (err) {
+      toast.error('Failed to update featured flag');
+    }
+  };
+
+  const handleToggleActive = async (reviewId: number, value: boolean) => {
+    try {
+      await api.patch(`/reviews/${reviewId}/active`, { active: value });
+      toast.success('Updated active flag');
+      await loadReviews();
+    } catch (err) {
+      toast.error('Failed to update active flag');
+    }
+  };
+
+  const handleUpdateReview = async (reviewId: number, updated: Partial<Review>) => {
+    try {
+      await api.put(`/reviews/${reviewId}`, updated);
+      toast.success('Review updated');
+      await loadReviews();
+    } catch (err) {
+      toast.error('Failed to update review');
     }
   };
 
