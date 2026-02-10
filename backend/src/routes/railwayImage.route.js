@@ -10,7 +10,7 @@ const {
   deleteProductImage,
   getProductWithImages,
 } = require('../controllers/railwayImageUpload.controller');
-const { verifyAdmin } = require('../middlewares/auth.middleware');
+const adminAuth = require('../middlewares/adminAuth');
 
 // Configure multer for memory storage (will stream to Railway)
 const upload = multer({
