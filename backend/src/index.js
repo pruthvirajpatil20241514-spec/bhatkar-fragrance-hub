@@ -103,6 +103,7 @@ async function runMigrations() {
         if (bestSellerColumns.length === 0) {
             logger.info('🔄 Adding is_best_seller column...');
             await db.query(`ALTER TABLE products ADD COLUMN is_best_seller BOOLEAN DEFAULT 0`);
+            await db.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT 0`);
             logger.info('✓ Added is_best_seller column');
         } else {
             logger.info('✓ is_best_seller column already exists');

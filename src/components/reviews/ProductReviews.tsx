@@ -40,7 +40,8 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
 
   // Load reviews and stats on mount
   useEffect(() => {
-    loadReviews();
+    // Load featured reviews by default, stats separately
+    loadFeaturedReviews();
     loadStats();
   }, [productId]);
 
@@ -51,6 +52,20 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       setReviews(response.data.data || []);
     } catch (error) {
       console.error("Failed to load reviews:", error);
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadFeaturedReviews = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/reviews/product/${productId}/featured`);
+      const featured = response.data.data || [];
+      setReviews(featured);
+    } catch (error) {
+      console.error("Failed to load featured reviews:", error);
       setReviews([]);
     } finally {
       setLoading(false);
@@ -279,7 +294,11 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => setExpandedReviews(true)}
+                onClick={async () => {
+                  // Load full reviews list then expand
+                  await loadReviews();
+                  setExpandedReviews(true);
+                }}
               >
                 See All {reviews.length} Reviews
               </Button>

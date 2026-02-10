@@ -79,7 +79,7 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, brand, price, quantity_ml, quantity_unit, category, concentration, description, stock, is_best_seller } = req.body;
+        const { name, brand, price, quantity_ml, quantity_unit, category, concentration, description, stock, is_best_seller, is_active } = req.body;
 
         // Validate required fields
         if (!name || !brand || !price || !category || !concentration) {
@@ -99,8 +99,19 @@ exports.updateProduct = async (req, res) => {
             concentration,
             description,
             stock: stock || 0,
-            is_best_seller: is_best_seller || false
+            is_best_seller: is_best_seller || false,
+            is_active: is_active !== undefined ? is_active : 0
         };
+
+        // If attempting to set product active, enforce minimum 2 active reviews
+        if (updatedProduct.is_active) {
+            const reviewsQueries = require('../database/reviews.queries');
+            const stats = await reviewsQueries.getReviewStats(id);
+            const count = stats.total_reviews || 0;
+            if (count < 2) {
+                return res.status(400).send({ status: 'error', message: 'Product cannot be set live. At least 2 active reviews are required.' });
+            }
+        }
 
         const data = await Product.update(id, updatedProduct);
         logger.info(`Product updated: ${id}`);
