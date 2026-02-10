@@ -4,7 +4,7 @@
  */
 
 const { uploadToRailway, deleteFromRailway } = require('../config/railwayStorage.config');
-const db = require('../database/db');
+const db = require('../config/db.config');
 
 /**
  * Upload images for a product
