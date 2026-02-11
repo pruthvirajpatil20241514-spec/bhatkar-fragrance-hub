@@ -82,7 +82,7 @@ export default function ProductDetail() {
 
         // Normalize backend product
         const normalized: any = {
-          id: String(p.id),
+          id: p.id,
           name: p.name,
           description: p.description || p.short_description || '',
           price: p.price || 0,
@@ -103,6 +103,7 @@ export default function ProductDetail() {
           brand: p.brand,
           stock: p.stock || 0,
           is_best_seller: p.is_best_seller || false,
+          is_luxury_product: p.is_luxury_product || false,
         };
 
         setRemoteProduct(normalized);
@@ -273,50 +274,52 @@ export default function ProductDetail() {
       {/* Main Product Section */}
       <section className="py-12">
         <div className="container px-4">
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Image Gallery */}
-            <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
+            {/* Image Gallery - takes 1 column on mobile, 1 on tablet, 1 on desktop */}
+            <div className="md:col-span-1 lg:col-span-1 space-y-4 flex flex-col items-center md:items-start">
               <motion.div
                 key={activeImageIndex}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                className="aspect-square rounded-xl overflow-hidden bg-secondary"
+                className="w-full aspect-square rounded-xl overflow-hidden bg-secondary flex items-center justify-center"
               >
                 <img
                   src={displayImages[activeImageIndex] || '/placeholder.svg'}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain p-2 md:p-4"
                 />
               </motion.div>
 
-              {/* Thumbnail Gallery */}
+              {/* Thumbnail Gallery - Horizontal Scroll */}
               {displayImages.length > 1 && (
-                <div className="flex gap-3">
-                  {displayImages.map((image, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setActiveImageIndex(index)}
-                      className={cn(
-                        "w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors",
-                        activeImageIndex === index
-                          ? "border-primary"
-                          : "border-transparent"
-                      )}
-                    >
-                      <img
-                        src={image || '/placeholder.svg'}
-                        alt={`${product.name} ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
+                <div className="w-full md:w-auto overflow-x-auto md:overflow-visible">
+                  <div className="flex gap-3 pb-2 md:pb-0">
+                    {displayImages.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setActiveImageIndex(index)}
+                        className={cn(
+                          "min-w-16 md:min-w-20 w-16 md:w-20 h-16 md:h-20 rounded-lg overflow-hidden border-2 transition-colors flex-shrink-0",
+                          activeImageIndex === index
+                            ? "border-primary"
+                            : "border-transparent hover:border-muted-foreground"
+                        )}
+                      >
+                        <img
+                          src={image || '/placeholder.svg'}
+                          alt={`${product.name} ${index + 1}`}
+                          className="w-full h-full object-contain p-1"
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Product Info */}
-            <div>
+            {/* Product Info - takes 1 column on mobile, 1 on tablet, 2 on desktop */}
+            <div className="md:col-span-1 lg:col-span-2">
               {/* Badges */}
               <div className="flex gap-2 mb-4">
                 {product.isNewArrival && (

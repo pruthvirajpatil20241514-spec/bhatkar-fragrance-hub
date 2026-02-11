@@ -29,6 +29,8 @@ interface DatabaseProduct {
   images: ProductImage[];
   quantity_ml?: number;
   quantity_unit?: string;
+  is_best_seller?: boolean;
+  is_luxury_product?: boolean;
 }
 
 interface ProductCardProps {
@@ -124,6 +126,18 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                     )}
                     % Off
                   </Badge>
+                )}
+              </div>
+            )}
+
+            {/* Badges - For database products */}
+            {!isStatic && (
+              <div className="absolute left-3 top-3 flex flex-col gap-2">
+                {(product as DatabaseProduct).is_best_seller && (
+                  <Badge className="bg-accent text-accent-foreground">⭐ Best Seller</Badge>
+                )}
+                {(product as DatabaseProduct).is_luxury_product && (
+                  <Badge className="bg-purple-600 text-white">💎 Luxury</Badge>
                 )}
               </div>
             )}

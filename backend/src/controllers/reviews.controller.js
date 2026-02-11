@@ -54,10 +54,13 @@ exports.getAllProductReviews = asyncHandler(async (req, res) => {
 
 // Create a new review
 exports.createReview = asyncHandler(async (req, res) => {
-    const { productId } = req.params;
-    const { reviewer_name, rating, review_text, verified_purchase } = req.body;
+    const productIdFromUrl = req.params.productId;
+    const { product_id, productId, reviewer_name, rating, review_text, verified_purchase, is_approved, is_active } = req.body;
 
-    if (!productId || !reviewer_name || !rating || !review_text) {
+    // Support both URL params and body
+    const productId_ = productIdFromUrl || product_id || productId;
+
+    if (!productId_ || !reviewer_name || !rating || !review_text) {
         return res.status(400).send({
             status: 'error',
             message: 'Product ID, reviewer name, rating, and review text are required'
@@ -72,15 +75,17 @@ exports.createReview = asyncHandler(async (req, res) => {
     }
 
     const reviewData = {
-        product_id: productId,
+        product_id: productId_,
         reviewer_name,
         rating,
         review_text,
-        verified_purchase: verified_purchase || false
+        verified_purchase: verified_purchase !== undefined ? verified_purchase : false,
+        is_approved: is_approved !== undefined ? is_approved : true,
+        is_active: is_active !== undefined ? is_active : true
     };
 
     const review = await reviewsQueries.createReview(reviewData);
-    logger.info(`Review created for product: ${productId}`);
+    logger.info(`Review created for product: ${productId_}`);
 
     return res.status(201).send({
         status: 'success',

@@ -19,8 +19,11 @@ router.get('/product/:productId/all', adminAuth, reviewsController.getAllProduct
 // Get single review by ID - PUBLIC
 router.get('/:reviewId', reviewsController.getReviewById);
 
-// Create a new review - PUBLIC
+// Create a new review - PUBLIC (via URL params)
 router.post('/product/:productId', reviewsController.createReview);
+
+// Create a new review - PUBLIC (via body - for admin bulk creation)  
+router.post('/', reviewsController.createReview);
 
 // Check if product meets minimum active reviews (public)
 router.get('/product/:productId/check-minimum', reviewsController.checkProductReviewsMinimum);

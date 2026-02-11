@@ -15,7 +15,7 @@ const convertProduct = (product) => ({
 });
 
 class Product {
-    constructor(name, brand, price, quantity_ml, quantity_unit, category, concentration, description, stock, is_best_seller = false, is_active = 0) {
+    constructor(name, brand, price, quantity_ml, quantity_unit, category, concentration, description, stock, is_best_seller = false, is_luxury_product = false, is_active = 0) {
         this.name = name;
         this.brand = brand;
         this.price = price;
@@ -26,6 +26,7 @@ class Product {
         this.description = description;
         this.stock = stock;
         this.is_best_seller = is_best_seller;
+        this.is_luxury_product = is_luxury_product;
         this.is_active = is_active;
     }
 
@@ -43,6 +44,7 @@ class Product {
                     newProduct.description,
                     newProduct.stock,
                     newProduct.is_best_seller || false,
+                    newProduct.is_luxury_product || false,
                     newProduct.is_active !== undefined ? newProduct.is_active : 0
                 ]);
             return {
@@ -93,6 +95,7 @@ class Product {
                     updatedProduct.description,
                     updatedProduct.stock,
                     updatedProduct.is_best_seller || false,
+                    updatedProduct.is_luxury_product || false,
                     updatedProduct.is_active !== undefined ? updatedProduct.is_active : 0,
                     id
                 ]);

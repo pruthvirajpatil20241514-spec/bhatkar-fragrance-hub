@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Edit2, Trash2, Loader, Upload, X, Images } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader, Upload, X, Images, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,6 +41,7 @@ interface Product {
   description: string;
   stock: number;
   is_best_seller?: boolean;
+  is_luxury_product?: boolean;
   created_on: string;
   images?: Array<{
     id: number;
@@ -62,6 +63,7 @@ interface FormData {
   description: string;
   stock: string;
   is_best_seller: boolean;
+  is_luxury_product: boolean;
 }
 
 interface ProductImage {
@@ -70,6 +72,12 @@ interface ProductImage {
   altText: string;
   imageOrder: number;
   isThumbnail: boolean;
+}
+
+interface InitialReview {
+  reviewer_name: string;
+  rating: number;
+  review_text: string;
 }
 
 export default function Products() {
@@ -93,6 +101,7 @@ export default function Products() {
     description: "",
     stock: "0",
     is_best_seller: false,
+    is_luxury_product: false,
   });
 
   const [images, setImages] = useState<ProductImage[]>([]);
@@ -102,6 +111,10 @@ export default function Products() {
   const [variantImageFiles, setVariantImageFiles] = useState<File[]>([]);
   const [isUploadingVariantImages, setIsUploadingVariantImages] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Reviews state
+  const [initialReviews, setInitialReviews] = useState<InitialReview[]>([]);
+  const [newReview, setNewReview] = useState<InitialReview>({ reviewer_name: "", rating: 5, review_text: "" });
 
   const handleVariantFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -151,11 +164,14 @@ export default function Products() {
         description: product.description,
         stock: product.stock.toString(),
         is_best_seller: product.is_best_seller || false,
+        is_luxury_product: (product as any).is_luxury_product || false,
       });
       // Load existing images and variants for product
       loadProductImages(product.id);
       loadProductVariants(product.id);
       setNewVariant({ name: "", value: "", unit: "ml", price: "", stock: "" });
+      setInitialReviews([]);
+      setNewReview({ reviewer_name: "", rating: 5, review_text: "" });
     } else {
       setEditingId(null);
       setFormData({
@@ -169,10 +185,13 @@ export default function Products() {
         description: "",
         stock: "0",
         is_best_seller: false,
+        is_luxury_product: false,
       });
       setImages([]);
       setEditVariants([]);
       setNewVariant({ name: "", value: "", unit: "ml", price: "", stock: "" });
+      setInitialReviews([]);
+      setNewReview({ reviewer_name: "", rating: 5, review_text: "" });
     }
     setIsOpen(true);
   };
@@ -223,10 +242,13 @@ export default function Products() {
       description: "",
       stock: "0",
       is_best_seller: false,
+      is_luxury_product: false,
     });
     setImages([]);
     setEditVariants([]);
     setNewVariant({ name: "", value: "", unit: "ml", price: "", stock: "" });
+    setInitialReviews([]);
+    setNewReview({ reviewer_name: "", rating: 5, review_text: "" });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,6 +275,7 @@ export default function Products() {
         description: formData.description,
         stock: parseInt(formData.stock) || 0,
         is_best_seller: formData.is_best_seller,
+        is_luxury_product: formData.is_luxury_product,
       };
 
       let productId: number;
@@ -324,6 +347,26 @@ export default function Products() {
         }
       }
 
+      // Handle initial reviews if provided
+      if (initialReviews.length > 0) {
+        for (const review of initialReviews) {
+          try {
+            await api.post(`/reviews`, {
+              product_id: productId,
+              reviewer_name: review.reviewer_name,
+              rating: review.rating,
+              review_text: review.review_text,
+              verified_purchase: true,
+              is_approved: true,
+              is_active: true
+            });
+          } catch (reviewErr: any) {
+            console.error("Failed to create review:", reviewErr);
+            toast.error(`Failed to create review for ${review.reviewer_name}`);
+          }
+        }
+      }
+
       await fetchProducts();
       handleCloseDialog();
       toast.success(editingId ? "Product updated successfully!" : "Product created successfully!");
@@ -333,6 +376,27 @@ export default function Products() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddReview = () => {
+    if (!newReview.reviewer_name.trim() || !newReview.review_text.trim()) {
+      toast.error("Please fill in reviewer name and review text");
+      return;
+    }
+
+    if (newReview.rating < 1 || newReview.rating > 5) {
+      toast.error("Rating must be between 1 and 5 stars");
+      return;
+    }
+
+    setInitialReviews([...initialReviews, { ...newReview }]);
+    setNewReview({ reviewer_name: "", rating: 5, review_text: "" });
+    toast.success("Review added to product!");
+  };
+
+  const handleRemoveReview = (index: number) => {
+    setInitialReviews(initialReviews.filter((_, i) => i !== index));
+    toast.success("Review removed");
   };
 
   const handleAddImage = (imageUrl: string, altText: string) => {
@@ -787,6 +851,21 @@ export default function Products() {
               </label>
             </div>
 
+            {/* Luxury Product Flag */}
+            <div className="flex items-center gap-2 p-2 bg-purple-50 border border-purple-200 rounded">
+              <input
+                type="checkbox"
+                id="is_luxury_product"
+                checked={formData.is_luxury_product}
+                onChange={(e) => setFormData({ ...formData, is_luxury_product: e.target.checked })}
+                disabled={isSubmitting}
+                className="w-4 h-4 rounded cursor-pointer"
+              />
+              <label htmlFor="is_luxury_product" className="text-sm font-medium cursor-pointer flex items-center gap-1">
+                💎 Luxury Product
+              </label>
+            </div>
+
             {/* Product Images */}
             <div className="border-t pt-3">
               <div className="mb-2">
@@ -992,6 +1071,113 @@ export default function Products() {
                 </form>
               </div>
             )}
+
+            {/* Initial Reviews Section */}
+            <div className="border-t pt-3">
+              <label className="text-xs font-semibold block mb-2 uppercase tracking-wide text-muted-foreground">
+                Initial Reviews (Minimum 2 Recommended)
+              </label>
+
+              {/* Existing Reviews List */}
+              {initialReviews.length > 0 && (
+                <div className="space-y-1 mb-3">
+                  <p className="text-xs text-muted-foreground mb-2">{initialReviews.length} review(s)</p>
+                  {initialReviews.map((review, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start justify-between p-2 bg-muted rounded border border-input text-xs"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{review.reviewer_name}</p>
+                        <div className="flex items-center gap-1 my-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-3 w-3 ${
+                                i < review.rating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-muted-foreground line-clamp-2">{review.review_text}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleRemoveReview(index)}
+                        className="h-6 w-6 p-0 flex-shrink-0 ml-2"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add New Review Form */}
+              {initialReviews.length < 10 && (
+                <div className="p-2 bg-muted/30 rounded space-y-2">
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Reviewer Name</label>
+                    <Input
+                      type="text"
+                      placeholder="e.g., John Doe"
+                      value={newReview.reviewer_name}
+                      onChange={(e) => setNewReview({ ...newReview, reviewer_name: e.target.value })}
+                      className="text-xs h-8"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Rating (1-5 stars)</label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={newReview.rating}
+                        onChange={(e) => setNewReview({ ...newReview, rating: Math.min(5, Math.max(1, parseInt(e.target.value) || 1)) })}
+                        className="text-xs h-8 w-16"
+                      />
+                      <div className="flex gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 cursor-pointer ${
+                              i < newReview.rating
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                            onClick={() => setNewReview({ ...newReview, rating: i + 1 })}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Review Text</label>
+                    <textarea
+                      placeholder="Write the review..."
+                      value={newReview.review_text}
+                      onChange={(e) => setNewReview({ ...newReview, review_text: e.target.value })}
+                      className="w-full px-2 py-1 border border-input rounded text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                      rows={2}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="w-full text-xs h-8"
+                    onClick={handleAddReview}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Review
+                  </Button>
+                </div>
+              )}
+            </div>
             </form>
           </div>
 
