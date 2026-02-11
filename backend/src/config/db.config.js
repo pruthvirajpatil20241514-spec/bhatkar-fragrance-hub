@@ -16,12 +16,36 @@ const pool = mysql.createPool({
     ssl: process.env.NODE_ENV === 'production' ? true : false
 });
 
-// Log pool creation
-pool.getConnection().then(() => {
-    logger.info('Database pool created successfully');
-}).catch((err) => {
-    logger.error('Database pool creation failed:', err.message);
-    process.exit(1);
+// Attempt to verify DB connectivity with retries (exponential backoff)
+async function verifyConnectionWithRetry(maxAttempts = 10, initialDelayMs = 2000) {
+    let attempt = 0;
+    let delay = initialDelayMs;
+
+    while (attempt < maxAttempts) {
+        try {
+            attempt++;
+            const conn = await pool.getConnection();
+            conn.release();
+            logger.info('Database pool created successfully');
+            return true;
+        } catch (err) {
+            logger.warn(`Database pool creation failed (attempt ${attempt}/${maxAttempts}): ${err.message}`);
+            if (attempt >= maxAttempts) {
+                logger.error('Max DB connection attempts reached. Continuing and retrying queries later.');
+                return false;
+            }
+            // wait before retrying
+            await new Promise(res => setTimeout(res, delay));
+            // exponential backoff with cap
+            delay = Math.min(delay * 2, 30000);
+        }
+    }
+}
+
+// Start verification but do not exit process if DB is not yet available.
+verifyConnectionWithRetry().catch(err => {
+    logger.error('Unexpected error during DB verification:', err.message);
 });
 
 module.exports = pool;
+
