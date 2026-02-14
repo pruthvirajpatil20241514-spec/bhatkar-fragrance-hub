@@ -16,7 +16,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import api from '../lib/axios';
-import { logger } from '../utils/logger';
+import { logger } from '../lib/logger';
 
 // ========================================================================
 // TYPE DEFINITIONS
