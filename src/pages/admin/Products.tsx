@@ -1361,11 +1361,8 @@ function ImageUploadForm({
 
         console.log("🚀 Uploading to Railway Storage - Product:", currentProductId, "File:", selectedFile.name);
 
-        const response = await api.post(`/images/upload/${currentProductId}`, form, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        // Don't set Content-Type header - let axios handle it automatically for FormData
+        const response = await api.post(`/images/upload/${currentProductId}`, form);
 
         console.log("✅ Upload response:", response.data);
 
@@ -1396,9 +1393,8 @@ function ImageUploadForm({
         const form = new FormData();
         form.append('images', selectedFile);
 
-        const response = await api.post('/images/upload-temp', form, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        // Don't set Content-Type header - let axios handle it automatically for FormData
+        const response = await api.post('/images/upload-temp', form);
 
         const uploaded = response.data.data?.images || [];
         if (uploaded.length > 0) {
