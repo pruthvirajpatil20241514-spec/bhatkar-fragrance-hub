@@ -11,6 +11,7 @@ const reviewsRoute = require("./routes/reviews.route");
 const orderRoute = require("./routes/order.route");
 const uploadRoute = require("./routes/upload.route");
 const imageRoute = require("./routes/image.route");
+const paymentRoute = require("./routes/paymentRoutes");
 const { httpLogStream } = require("./utils/logger");
 
 const app = express();
@@ -85,6 +86,7 @@ app.use("/api/reviews", reviewsRoute);
 app.use("/api/orders", orderRoute);
 app.use("/api/upload-image", uploadRoute);
 app.use("/api/images", imageRoute);
+app.use("/api/payment", paymentRoute);
 
 // ===== 404 HANDLER =====
 app.use((req, res) => {
