@@ -1,79 +1,138 @@
 import axios from "axios";
 
+// ===== CONFIG =====
 // Use environment variable or fallback to deployed backend
 const baseURL = import.meta.env.VITE_API_BASE_URL || "https://bhatkar-fragrance-hub-1.onrender.com/api";
 
+console.log(`🔗 API Base URL: ${baseURL}`);
+
 const api = axios.create({
   baseURL,
-  // Don't set default Content-Type header - let axios auto-detect based on request body
-  // This allows FormData to work properly with multipart/form-data
-  headers: {
-    // Content-Type will be set automatically by axios based on request data type
-  },
+  timeout: 30000, // 30 second timeout
+  withCredentials: false,
 });
 
-// Add request interceptor to include Bearer token and handle FormData
+// ===== REQUEST INTERCEPTOR =====
+// Add auth token and handle FormData
 api.interceptors.request.use(
   (config) => {
-    // Log request for debugging
+    // Log request details for debugging
     const fullUrl = `${config.baseURL || ''}${config.url}`;
-    console.log(`📡 ${config.method?.toUpperCase()} ${fullUrl}`);
+    const method = config.method?.toUpperCase() || 'GET';
+    const timestamp = new Date().toISOString();
     
-    // Don't add token to public endpoints (signin, signup)
-    const publicEndpoints = ["/auth/signin", "/auth/signup"];
-    const isPublicEndpoint = publicEndpoints.some(endpoint => config.url?.includes(endpoint));
+    console.log(`📡 [${timestamp}] ${method} ${fullUrl}`);
     
-    // Always add authorization token for protected routes
+    // ===== AUTHENTICATION HANDLING =====
+    // Public endpoints that don't need auth
+    const publicEndpoints = [
+      "/auth/signin",
+      "/auth/signup",
+      "/products",
+      "/variants",
+      "/reviews",
+      "/images",
+    ];
+    
+    const isPublicEndpoint = publicEndpoints.some(endpoint => 
+      config.url?.includes(endpoint)
+    );
+    
+    // Only add token for protected endpoints
     if (!isPublicEndpoint) {
-      // Check for admin token first, then user token
       const token = localStorage.getItem("adminToken") || localStorage.getItem("token");
       
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log(`  🔐 Auth: Token attached`);
+      } else {
+        console.warn(`  ⚠️ Auth: No token found for protected endpoint`);
       }
+    } else {
+      console.log(`  🌍 Auth: Public endpoint (no token needed)`);
     }
 
-    // If data is FormData, let axios handle the Content-Type header automatically
-    // This ensures the boundary is properly set for multipart/form-data
+    // ===== CONTENT-TYPE HANDLING =====
+    // Handle FormData (for file uploads)
     if (config.data instanceof FormData) {
-      // Delete Content-Type header so axios sets it with proper boundary
-      if (config.headers["Content-Type"] === "multipart/form-data") {
-        delete config.headers["Content-Type"];
-      }
-    } else if (!config.headers["Content-Type"]) {
-      // Set default Content-Type for JSON requests only
+      // Let axios set Content-Type with proper boundary
+      delete config.headers["Content-Type"];
+      console.log(`  📦 Content-Type: multipart/form-data (auto)`);
+    } else if (config.data) {
+      // Set Content-Type for JSON requests
       config.headers["Content-Type"] = "application/json";
+      console.log(`  📄 Content-Type: application/json`);
     }
     
     return config;
   },
   (error) => {
-    console.error('❌ Request error:', error.message);
+    console.error('❌ Request Error:', error.message);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor for enhanced error logging
+// ===== RESPONSE INTERCEPTOR =====
+// Handle success and error responses with detailed logging
 api.interceptors.response.use(
   (response) => {
-    if (response.status === 200 || response.status === 201) {
-      console.log(`✅ Response ${response.status}`);
+    const { status, statusText, config } = response;
+    const method = config.method?.toUpperCase() || 'GET';
+    const url = config.url;
+    
+    // Success logging
+    if (status >= 200 && status < 300) {
+      console.log(`✅ Success [${status}] ${method} ${url}`);
+    } else {
+      console.warn(`⚠️ Status [${status}] ${method} ${url}`);
     }
+    
     return response;
   },
   (error) => {
+    // ===== ERROR RESPONSE =====
     if (error.response) {
-      console.error(`❌ HTTP ${error.response.status}: ${error.response.statusText}`);
-      console.error(`   URL: ${error.config?.url}`);
-      if (error.response.data?.error) {
-        console.error(`   Error: ${error.response.data.error}`);
+      const { status, statusText, data, config } = error.response;
+      const method = config?.method?.toUpperCase() || 'UNKNOWN';
+      const url = config?.url || 'unknown';
+      
+      // Log detailed error information
+      console.error(`❌ HTTP Error [${status}] ${method} ${url}`);
+      console.error(`   Status: ${status} ${statusText}`);
+      
+      // Log error message from backend if available
+      if (data?.error) {
+        console.error(`   Backend Error: ${data.error}`);
+      } else if (data?.message) {
+        console.error(`   Message: ${data.message}`);
       }
-    } else if (error.request) {
-      console.error('❌ No response from server');
-      console.error('   Request:', error.request);
-    } else {
+      
+      // Special handling for 404 errors
+      if (status === 404) {
+        console.error(`   ℹ️  Endpoint not found. Check route definition on backend.`);
+      }
+      
+      // Special handling for 401/403 errors
+      if (status === 401 || status === 403) {
+        console.error(`   ℹ️  Authentication/Authorization failed. Check token.`);
+      }
+      
+      // Special handling for 500 errors
+      if (status >= 500) {
+        console.error(`   ℹ️  Server error. Check backend logs.`);
+      }
+    }
+    // ===== NO RESPONSE (Network Error) =====
+    else if (error.request) {
+      console.error('❌ Network Error: No response from server');
+      console.error(`   Request: ${error.request.method} ${error.request.url}`);
+      console.error(`   ℹ️  Check if backend is running and CORS is enabled.`);
+    }
+    // ===== REQUEST SETUP ERROR =====
+    else {
       console.error('❌ Error:', error.message);
     }
+    
     return Promise.reject(error);
   }
 );

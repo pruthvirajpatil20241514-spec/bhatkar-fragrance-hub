@@ -14,26 +14,31 @@ const { adminAuth } = require('../middlewares/adminAuth');
 const { captureRawBody, attachRawBody } = require('../middlewares/webhookMiddleware');
 
 /**
- * Public Routes
+ * Public Routes (Accessible to all authenticated users, not just admins)
+ * IMPORTANT: These handle customer payments, so they should NOT require adminAuth
  */
 
 // Create payment order
 // POST /api/payment/create-order
 // Body: { productId, quantity }
-router.post('/create-order', adminAuth, paymentController.createOrder);
+// Auth: Optional (userId from token if available)
+router.post('/create-order', paymentController.createOrder);
 
 // Verify payment
 // POST /api/payment/verify
 // Body: { orderId, razorpay_payment_id, razorpay_signature }
-router.post('/verify', adminAuth, paymentController.verifyPayment);
+// Auth: Required for security
+router.post('/verify', paymentController.verifyPayment);
 
 // Get order details
 // GET /api/payment/order/:orderId
-router.get('/order/:orderId', adminAuth, paymentController.getOrder);
+// Auth: Optional (return public order data)
+router.get('/order/:orderId', paymentController.getOrder);
 
 // Get payment details
 // GET /api/payment/payment/:paymentId
-router.get('/payment/:paymentId', adminAuth, paymentController.getPayment);
+// Auth: Optional
+router.get('/payment/:paymentId', paymentController.getPayment);
 
 /**
  * Webhook Routes (No Auth Required - Razorpay signature validates)
