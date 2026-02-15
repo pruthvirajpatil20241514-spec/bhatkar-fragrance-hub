@@ -73,7 +73,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
         throw new Error('Cart is empty');
       }
 
-      const orderResponse = await api.post('/api/payment/create-order', {
+      const orderResponse = await api.post('/payment/create-order', {
         productId: mainItem.productId,
         quantity: mainItem.quantity
       });
@@ -86,7 +86,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
 
       // 3. Open Razorpay checkout
       const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID,
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_SG2Tx6WI4tXjVc',
         amount: Math.round(amount * 100), // Convert to paise
         currency: 'INR',
         name: 'Bhatkar Fragrance Hub',
@@ -99,7 +99,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
             setLoading(true);
 
             // 4. Verify payment on backend
-            const verifyResponse = await api.post('/api/payment/verify', {
+            const verifyResponse = await api.post('/payment/verify', {
               orderId,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature
