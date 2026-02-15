@@ -43,13 +43,41 @@ function isStaticProduct(product: any): product is Product {
 }
 
 function getDatabaseProductImage(product: DatabaseProduct): string {
-  if (product.images && product.images.length > 0) {
-    const thumbnail = product.images.find(img => img.is_thumbnail) || product.images[0];
-    const apiBase = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '') : '';
-    const url = thumbnail.image_url || '';
-    return url.startsWith('http') ? url : `${apiBase}${url}`;
+  if (!product || !product.images || product.images.length === 0) {
+    return '/placeholder.svg';
   }
-  return '/placeholder.svg';
+
+  try {
+    // Find thumbnail or use first image
+    let imageObj = product.images.find(img => img?.is_thumbnail) || product.images[0];
+    
+    if (!imageObj) {
+      return '/placeholder.svg';
+    }
+
+    // Handle if imageObj is already a string URL
+    if (typeof imageObj === 'string') {
+      return imageObj.startsWith('http') ? imageObj : imageObj;
+    }
+
+    // Handle if imageObj is an object with image_url
+    if (typeof imageObj === 'object' && imageObj.image_url) {
+      const url = imageObj.image_url;
+      if (typeof url !== 'string') {
+        console.warn('Image URL is not a string:', imageObj);
+        return '/placeholder.svg';
+      }
+      
+      const apiBase = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '') : '';
+      return url.startsWith('http') ? url : `${apiBase}${url}`;
+    }
+
+    console.warn('Invalid image object:', imageObj);
+    return '/placeholder.svg';
+  } catch (error) {
+    console.error('Error getting database product image:', error);
+    return '/placeholder.svg';
+  }
 }
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
