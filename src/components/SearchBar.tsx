@@ -5,6 +5,7 @@ import { Search as SearchIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { products } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
+import { getProductImage, handleImageError } from "@/lib/imageUtils";
 
 export function SearchBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -182,9 +183,10 @@ export function SearchBar() {
                   >
                     <div className="flex gap-3 sm:gap-4">
                       <img
-                        src={product.images[0]}
+                        src={getProductImage(product.images)}
                         alt={product.name}
                         className="h-14 w-14 sm:h-16 sm:w-16 rounded object-cover flex-shrink-0"
+                        onError={(e) => handleImageError(e as any)}
                       />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-sm mb-1 truncate">{product.name}</h4>
