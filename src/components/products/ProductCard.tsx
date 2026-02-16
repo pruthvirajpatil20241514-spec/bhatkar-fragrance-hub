@@ -8,6 +8,7 @@ import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { formatPrice, cn } from "@/lib/utils";
+import { getProductImage, handleImageError } from "@/lib/imageUtils";
 
 interface ProductImage {
   id: number;
@@ -42,68 +43,6 @@ function isStaticProduct(product: any): product is Product {
   return 'fragranceType' in product && 'sizes' in product;
 }
 
-function getDatabaseProductImage(product: DatabaseProduct): string {
-  try {
-    // 1. Validate product and images array
-    if (!product) {
-      console.warn('⚠️ Product is null/undefined');
-      return '/placeholder.svg';
-    }
-
-    if (!product.images || !Array.isArray(product.images) || product.images.length === 0) {
-      console.warn(`⚠️ Product ${product.id} (${product.name}) has no images`);
-      return '/placeholder.svg';
-    }
-
-    // 2. Find thumbnail image or fallback to first image
-    const imageObj = product.images.find(img => img?.is_thumbnail) || product.images[0];
-    
-    if (!imageObj) {
-      console.warn(`⚠️ No valid image found for product ${product.id}`);
-      return '/placeholder.svg';
-    }
-
-    // 3. Handle if imageObj is already a string URL (direct URL)
-    if (typeof imageObj === 'string') {
-      console.log(`✅ Product ${product.id}: Found string image URL`);
-      return imageObj.startsWith('http') ? imageObj : imageObj;
-    }
-
-    // 4. Handle if imageObj is an object with image_url property (most common case)
-    if (typeof imageObj === 'object' && imageObj.image_url) {
-      const url = imageObj.image_url;
-      
-      // 5. CRITICAL: Verify URL is actually a string (not object/array)
-      if (typeof url !== 'string') {
-        console.error(`❌ Product ${product.id}: image_url is ${typeof url}, not string:`, url);
-        return '/placeholder.svg';
-      }
-      
-      // 6. Handle relative vs absolute URLs
-      const apiBase = import.meta.env.VITE_API_BASE_URL 
-        ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '') 
-        : '';
-      
-      const finalUrl = url.startsWith('http') ? url : `${apiBase}${url}`;
-      console.log(`✅ Product ${product.id}: Image URL resolved to ${finalUrl.substring(0, 50)}...`);
-      return finalUrl;
-    }
-
-    // 7. Unexpected format - log details for debugging
-    console.error(`❌ Product ${product.id}: Image object has unexpected format:`, {
-      type: typeof imageObj,
-      keys: typeof imageObj === 'object' ? Object.keys(imageObj) : 'N/A',
-      value: imageObj
-    });
-    return '/placeholder.svg';
-    
-  } catch (error) {
-    // 8. Catch-all error handler to prevent crash
-    console.error(`❌ Error getting image for product ${product?.id}:`, error);
-    return '/placeholder.svg';
-  }
-}
-
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
@@ -114,7 +53,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const isStatic = isStaticProduct(product);
   const imageUrl = isStatic 
     ? product.images[0] 
-    : getDatabaseProductImage(product as DatabaseProduct);
+    : getProductImage((product as DatabaseProduct).images);
   const productPrice = product.price;
   const productName = product.name;
 
@@ -152,9 +91,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
               className="h-full w-full object-cover"
               animate={{ scale: isHovered ? 1.05 : 1 }}
               transition={{ duration: 0.4 }}
-              onError={(e: any) => {
-                e.target.src = '/placeholder.svg';
-              }}
+              onError={(e) => handleImageError(e as any)}
             />
 
             {/* Badges - Only show for static products */}
