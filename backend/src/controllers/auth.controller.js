@@ -15,7 +15,10 @@ exports.signup = async (req, res) => {
             status: "success",
             data: {
                 token,
-                data
+                id: data.id,
+                firstname: data.firstname,
+                lastname: data.lastname,
+                email: data.email
             }
         });
     } catch (err) {
@@ -37,6 +40,7 @@ exports.signin = async (req, res) => {
                 status: 'success',
                 data: {
                     token,
+                    id: data.id,
                     firstname: data.firstname,
                     lastname: data.lastname,
                     email: data.email

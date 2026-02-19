@@ -112,9 +112,13 @@ exports.getProductWithImages = async (req, res) => {
   try {
     const { id: productId } = req.params;
 
-    const product = await ProductImage.getProductWithImages(productId);
+    let product = await ProductImage.getProductWithImages(productId);
 
-    logger.info(`Retrieved product ${productId} with ${product.images.length} images`);
+    // Refresh signed URLs dynamically (prevents expired URL issues)
+    const imageURLService = require('../services/imageURLService');
+    product = imageURLService.refreshProductImageUrls(product);
+
+    logger.info(`Retrieved product ${productId} with ${product.images.length} images (URLs refreshed)`);
 
     return res.status(200).json({
       status: 'success',
@@ -139,9 +143,34 @@ exports.getProductWithImages = async (req, res) => {
 // Get all products with images (for listing page)
 exports.getAllProductsWithImages = async (req, res) => {
   try {
-    const products = await ProductImage.getAllProductsWithImages();
+    // Protect against long-running DB queries (Render cold starts / Railway latency)
+    const dbPromise = ProductImage.getAllProductsWithImages();
 
-    logger.info(`Retrieved ${products.length} products with images`);
+    // Timeout fallback - respond earlier than axios client timeout (axios=15s)
+    const timeoutMs = 8000; // 8s
+    const timeoutPromise = new Promise((resolve, reject) => {
+      setTimeout(() => reject(new Error('DB query timeout')), timeoutMs);
+    });
+
+    let products;
+    try {
+      products = await Promise.race([dbPromise, timeoutPromise]);
+    } catch (err) {
+      // Log and return a graceful fallback so frontend doesn't hang
+      logger.error(`Get all products DB timeout/failure: ${err.message}`);
+      return res.status(503).json({
+        status: 'error',
+        message: 'Service temporarily unavailable, please try again shortly',
+        data: [],
+        total: 0
+      });
+    }
+
+    // Refresh signed URLs dynamically (prevents expired URL issues)
+    const imageURLService = require('../services/imageURLService');
+    products = imageURLService.refreshProductsImageUrls(products);
+
+    logger.info(`Retrieved ${products.length} products with images (URLs refreshed)`);
 
     return res.status(200).json({
       status: 'success',

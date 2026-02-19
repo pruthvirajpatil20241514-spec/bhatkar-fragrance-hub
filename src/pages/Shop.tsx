@@ -91,6 +91,7 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const prevProductCountRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   // Manual refresh function
   const handleRefresh = async () => {
@@ -143,20 +144,27 @@ export default function Shop() {
         console.log('✅ dbProducts state updated, should render now');
       } catch (error: any) {
         console.error('❌ Fetch failed:', error.message, error);
-        setLoading(false);
+        if (isMountedRef.current) setLoading(false);
       }
     };
 
     // Fetch immediately on mount
     fetchProducts();
 
-    // Poll for new products every 15 seconds
+    // Poll for new products every 30 seconds; skip polling while user is typing a search
     const pollInterval = setInterval(() => {
-      fetchProducts();
-    }, 15000);
+      if (!searchQuery) {
+        fetchProducts();
+      } else {
+        console.debug('Polling skipped while user searching');
+      }
+    }, 30000);
 
     // Cleanup interval on unmount
-    return () => clearInterval(pollInterval);
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(pollInterval);
+    };
   }, []); // Empty dependency array - effect runs once on mount
 
   const filteredProducts = useMemo(() => {

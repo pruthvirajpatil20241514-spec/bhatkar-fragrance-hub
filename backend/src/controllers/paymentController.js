@@ -10,29 +10,36 @@ const { logger } = require('../utils/logger');
 /**
  * POST /api/payment/create-order
  * Create a new payment order
+ * 
+ * Accepts userId from two sources:
+ * 1. JWT token via Authorization header (via optionalAuth middleware)
+ * 2. Request body (as fallback)
  */
 exports.createOrder = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
-    const userId = req.user?.id;
+
+    // Prefer userId from authenticated middleware (optionalAuth)
+    // Allow guest checkout (userId will be null)
+    const userId = req.user?.id || null;
+
+    console.log('📋 Processing create-order request:');
+    console.log(`   productId: ${productId}`);
+    console.log(`   userId: ${userId ? userId : 'guest (none)'}`);
+    console.log(`   quantity: ${quantity}`);
 
     // Validate inputs
-    if (!productId || !userId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Product ID and User ID are required'
-      });
+    if (!productId) {
+      return res.status(400).json({ success: false, error: 'Product ID is required' });
     }
 
     if (quantity < 1 || quantity > 100) {
-      return res.status(400).json({
-        success: false,
-        error: 'Quantity must be between 1 and 100'
-      });
+      return res.status(400).json({ success: false, error: 'Quantity must be between 1 and 100' });
     }
 
+    // Create order; userId may be null for guest checkout
     const result = await paymentService.createOrder(userId, productId, quantity);
-    
+
     return res.status(200).json(result);
   } catch (error) {
     logger.error('❌ Error in createOrder:', error.message);

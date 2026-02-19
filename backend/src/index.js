@@ -1,6 +1,7 @@
 const app = require('./app');
 const { logger } = require('./utils/logger');
 const db = require('./config/db.config');
+const dbPool = require('./config/db.pool');
 
 const PORT = process.env.PORT || 3000;
 
@@ -149,6 +150,14 @@ async function runMigrations() {
 
 app.listen(PORT, '0.0.0.0', async () => {
     logger.info(`Running on PORT ${PORT}`);
+    // Initialize DB pool with retry (handles Render cold starts)
+    try {
+        await dbPool.initializePool();
+    } catch (err) {
+        logger.warn('Database pool initialization failed on startup:', err.message);
+        logger.warn('App will continue; DB calls will retry on demand.');
+    }
+
     // Run migrations after server starts
     await runMigrations();
 });

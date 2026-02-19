@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import api from "@/lib/axios";
 
 interface User {
+  id: number;
   firstname: string;
   lastname: string;
   email: string;
@@ -77,9 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 🔐 CUSTOMER LOGIN
   const login = async (data: LoginPayload) => {
     const res = await api.post("/auth/signin", data);
-    const { token, firstname, lastname, email } = res.data.data;
+    const { token, id, firstname, lastname, email } = res.data.data;
 
-    const userData = { firstname, lastname, email };
+    const userData = { id, firstname, lastname, email };
     localStorage.setItem("token", token);
     localStorage.setItem("role", "customer");
     localStorage.setItem("user", JSON.stringify(userData));
@@ -109,9 +110,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 📝 SIGNUP
   const signup = async (data: SignupPayload) => {
     const res = await api.post("/auth/signup", data);
-    const { token, firstname, lastname, email } = res.data.data;
+    const { token, id, firstname, lastname, email } = res.data.data;
 
-    const userData = { firstname, lastname, email };
+    const userData = { id, firstname, lastname, email };
     localStorage.setItem("token", token);
     localStorage.setItem("role", "customer");
     localStorage.setItem("user", JSON.stringify(userData));

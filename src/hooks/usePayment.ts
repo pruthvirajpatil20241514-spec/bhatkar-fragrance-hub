@@ -29,27 +29,16 @@ export function usePayment() {
         setLoading(true);
         setError(null);
 
-        // ========== STEP 1: VALIDATE USER IS LOGGED IN ==========
-        console.log("🔑 Checking authentication...");
+        // ========== STEP 1: OPTIONAL AUTH - ALLOW GUEST CHECKOUT ==========
+        console.log("🔑 Checking authentication (optional)...");
 
-        // Check if user is authenticated
-        if (!isAuthenticated || !token) {
-          const errorMsg = "❌ Please log in to purchase";
-          console.error(errorMsg);
-          setError(errorMsg);
-          toast({
-            title: "Authentication Required",
-            description: "Please log in to complete your purchase",
-            variant: "destructive",
-          });
-          // Redirect to login
-          window.location.href = "/auth/signin";
-          return;
-        }
-
-        // Get user display name
+        // Get user display name if available
         const userName = user?.firstname || admin?.email || "Customer";
-        console.log(`✅ User authenticated: ${userName}`);
+        if (isAuthenticated && token) {
+          console.log(`✅ User authenticated: ${userName}`);
+        } else {
+          console.log('ℹ️ Proceeding as guest (no auth token)');
+        }
 
         // ========== STEP 2: VALIDATE PAYLOAD ==========
         console.log("📋 Validating payment payload...");
@@ -70,44 +59,10 @@ export function usePayment() {
 
         console.log(`✅ Payload validated: productId=${productId}, quantity=${quantity}`);
 
-        // ========== STEP 3: EXTRACT USER ID ==========
-        console.log("🔍 Extracting user ID from auth context...");
-        
-        // Get userId from different sources
-        let userId: number | null = null;
-        
-        // Try from admin object first (for admin users)
-        if (admin?.id) {
-          userId = admin.id;
-          console.log(`✅ Admin user ID found: ${userId}`);
-        }
-        
-        // Try from localStorage as fallback
-        if (!userId) {
-          const storedUser = localStorage.getItem("user");
-          if (storedUser) {
-            try {
-              const parsedUser = JSON.parse(storedUser);
-              userId = parsedUser.id;
-              console.log(`✅ User ID from localStorage: ${userId}`);
-            } catch (e) {
-              console.warn("❌ Could not parse user from localStorage");
-            }
-          }
-        }
-        
-        // Validate userId exists
-        if (!userId || typeof userId !== "number" || userId < 1) {
-          const errorMsg = "❌ User ID not found - cannot process payment";
-          console.error(errorMsg);
-          setError(errorMsg);
-          toast({
-            title: "User Information Missing",
-            description: "Unable to retrieve your user ID. Please log out and log in again.",
-            variant: "destructive",
-          });
-          return;
-        }
+        // ========== STEP 3: OPTIONAL USER CONTEXT ==========
+        console.log("🔍 Extracting user ID from auth context (optional)...");
+        // When present, we may send Authorization header; backend will derive userId from token.
+        // For guest checkout we continue without userId.
 
         // ========== STEP 4: LOAD RAZORPAY SCRIPT ==========
         console.log("📦 Loading Razorpay script...");
@@ -137,21 +92,18 @@ export function usePayment() {
         console.log("📡 Sending API request to /api/payment/create-order");
         console.log(`   📊 API Base URL: ${import.meta.env.VITE_API_BASE_URL}`);
 
+        // Send minimal payload only (productId, quantity). Backend will extract userId from token if present.
         const payload = {
           productId,
-          userId,
           quantity,
         };
 
         console.log("   📄 Request payload:", JSON.stringify(payload, null, 2));
 
-        // Send request with Authorization header AND userId in payload
-        // Backend validates both sources for security
-        const response = await api.post("/payment/create-order", payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        // Send request. If token exists, include Authorization header so backend can associate order with user.
+        const headers: Record<string, string> = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const response = await api.post("/payment/create-order", payload, { headers });
 
         console.log(`✅ API Response [${response.status}]:`, response.data);
 

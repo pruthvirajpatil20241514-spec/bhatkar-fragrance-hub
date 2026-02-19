@@ -18,11 +18,15 @@ const { logger } = require('../utils/logger');
 const {
   DB_HOST,
   DB_USER,
-  DB_PASSWORD,
+  DB_PASSWORD: DB_PASSWORD_RAW,
+  DB_PASS,
   DB_NAME,
   DB_PORT = 3306,
   NODE_ENV = 'development'
 } = process.env;
+
+// Support both DB_PASSWORD and DB_PASS env var names (Railway uses DB_PASS)
+const DB_PASSWORD = DB_PASSWORD_RAW || DB_PASS || '';
 
 // ========================================================================
 // POOL CONFIGURATION (Production Optimized)
@@ -123,7 +127,7 @@ async function executeQuery(sql, params = []) {
     logger.debug(`📊 Executing query: ${sql.substring(0, 100)}...`);
     const startTime = Date.now();
     
-    const [results] = await connection.execute(sql, params);
+    const [results, fields] = await connection.execute(sql, params);
     
     const duration = Date.now() - startTime;
     
@@ -133,7 +137,7 @@ async function executeQuery(sql, params = []) {
       logger.debug(`✅ Query completed in ${duration}ms`);
     }
     
-    return results;
+    return [results, fields];
     
   } catch (error) {
     logger.error(`❌ Query error: ${error.message}`);
@@ -149,7 +153,7 @@ async function executeQuery(sql, params = []) {
  * Execute query and return single row
  */
 async function queryOne(sql, params = []) {
-  const results = await executeQuery(sql, params);
+  const [results] = await executeQuery(sql, params);
   return results.length > 0 ? results[0] : null;
 }
 
@@ -220,5 +224,6 @@ module.exports = {
   
   // For backward compatibility
   query: executeQuery,
+  execute: executeQuery,
   getPool: () => pool
 };
