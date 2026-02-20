@@ -7,7 +7,8 @@ import { products } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
 import { getProductImage, handleImageError } from "@/lib/imageUtils";
 
-export function SearchBar({ attachRight = false }: { attachRight?: boolean } = {}) {
+export function SearchBar(props: { attachRight?: boolean } = {}) {
+  const { attachRight = false } = props;
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<typeof products>([]);
