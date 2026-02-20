@@ -45,7 +45,7 @@ export function Header() {
           <img
             src="/bhatkar-logo.png"
             alt="Bhatkar & Co"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
             className="w-10 h-10 object-contain"
           />
 
