@@ -1,35 +1,8 @@
 import axios from "axios";
 
-// ===== CONFIG =====
-// Use environment variable or fallback to deployed backend
-const defaultBase = import.meta.env.VITE_API_BASE_URL || "https://bhatkar-fragrance-hub-1.onrender.com/api";
+const baseURL = import.meta.env.VITE_API_BASE_URL || "https://bhatkar-fragrance-hub-1.onrender.com/api";
 
-// Allow automatic local backend usage when developing locally.
-// Conditions that enable local backend (in order):
-//  - Query param `?api=local`
-//  - localStorage key `USE_LOCAL_API` == '1'
-//  - Running on localhost / 127.0.0.1
-let baseURL = defaultBase;
-try {
-  if (typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search);
-    const useLocalParam = params.get('api') === 'local';
-    const useLocalStorage = localStorage.getItem('USE_LOCAL_API') === '1';
-    const hostname = window.location.hostname;
-    const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
-
-    if (useLocalParam || useLocalStorage || isLocalHost) {
-      // Local backend runs on port 3001 by your request
-      baseURL = import.meta.env.VITE_LOCAL_API_BASE_URL || 'http://localhost:3001/api';
-      console.warn(`🔁 Using local API backend: ${baseURL} (use ?api=local or LOCAL flag to toggle)`);
-    }
-  }
-} catch (e) {
-  // If anything goes wrong (e.g., SSR), fall back to default
-  baseURL = defaultBase;
-}
-
-console.log(`🔗 API Base URL: ${baseURL}`);
+console.log(`API Base URL: ${baseURL}`);
 
 const api = axios.create({
   baseURL,

@@ -44,6 +44,26 @@ export function getProductImage(image: any, fallback: string = '/placeholder.svg
         return image;
       }
 
+      // Special case: some storage proxies embed an encoded origin URL in the path
+      // e.g. https://t3.storageapi.dev/container/https%3A//images.example.com/...,
+      // try to decode the embedded value and return that if valid.
+      try {
+        const encodedMatch = image.match(/https?:\/\/[^/]+\/(https?%3A[%2F%\/].*)/i);
+        if (encodedMatch && encodedMatch[1]) {
+          // decode once, then decode again if percent-encoded slashes remain
+          let decoded = decodeURIComponent(encodedMatch[1]);
+          if (decoded.includes('%2F') || decoded.includes('%252F')) {
+            decoded = decodeURIComponent(decoded);
+          }
+          if (decoded.startsWith('http')) {
+            console.debug('✅ getProductImage: Extracted embedded URL from storage proxy');
+            return decoded;
+          }
+        }
+      } catch (e) {
+        console.debug('ℹ️ getProductImage: failed to decode embedded proxy URL', e);
+      }
+
       console.warn(`⚠️ getProductImage: String is not a valid URL format: ${image}`);
       return fallback;
     }

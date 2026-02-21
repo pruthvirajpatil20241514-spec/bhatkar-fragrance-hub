@@ -32,7 +32,8 @@ async function main() {
       ['total_amount', 'DECIMAL(12,2) NOT NULL DEFAULT 0'],
       ['razorpay_order_id', "VARCHAR(128) NULL"],
       ['status', "VARCHAR(50) NULL"],
-      ['created_at', "DATETIME NULL" ]
+      ['created_at', "DATETIME NULL" ],
+      ['updated_at', "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"]
     ];
 
     for (const col of toAdd) {

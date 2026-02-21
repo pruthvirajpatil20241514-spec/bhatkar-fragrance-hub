@@ -56,11 +56,15 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
    * Handle payment process - Create order on backend for first cart item
    * Backend will fetch the price and ensure security
    */
-  const handlePayment = useCallback(async () => {
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
+
+  // Core payment flow extracted to allow prefill collection first
+  const doPayment = useCallback(async (prefillContact: string | null) => {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log('🛒 Starting payment process...');
 
       // 1. Load Razorpay script
@@ -79,10 +83,11 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
 
       console.log(`🔄 Creating order for product ${mainItem.productId}, quantity ${mainItem.quantity}...`);
       console.log(`📡 API Base URL: ${import.meta.env.VITE_API_BASE_URL}`);
-      
+
       const orderResponse = await api.post('/payment/create-order', {
         productId: mainItem.productId,
-        quantity: mainItem.quantity
+        quantity: mainItem.quantity,
+        contact: prefillContact || null
       });
 
       console.log('📨 Order creation response:', orderResponse.status, orderResponse.data);
@@ -105,7 +110,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
         name: 'Bhatkar Fragrance Hub',
         description: `Order - ${productName}`,
         order_id: razorpayOrderId,
-        
+
         // Success handler
         handler: async (response: any) => {
           try {
@@ -114,7 +119,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
             // 4. Verify payment on backend
             console.log('💳 Payment successful, verifying on backend...');
             console.log('Payment ID:', response.razorpay_payment_id);
-            
+
             const verifyResponse = await api.post('/payment/verify', {
               orderId,
               razorpay_payment_id: response.razorpay_payment_id,
@@ -157,7 +162,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
         // Contact information - prefill from checkout form if available
         prefill: {
           email: localStorage.getItem('userEmail') || '',
-          contact: localStorage.getItem('userPhone') || ''
+          contact: prefillContact || ''
         },
 
         // Theme
@@ -192,6 +197,20 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
     }
   }, [items, totalAmount, loadRazorpayScript, onSuccess, onError]);
 
+  const handlePayment = useCallback(() => {
+    // Check local saved phone first
+    const saved = localStorage.getItem('userPhone') || '';
+    if (saved) {
+      // proceed immediately
+      void doPayment(saved);
+      return;
+    }
+
+    // show modal to collect phone
+    setPhoneInput('');
+    setShowPhoneModal(true);
+  }, [doPayment]);
+
   return (
     <div className="checkout-payment">
       {error && (
@@ -218,6 +237,41 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
       >
         {loading ? 'Processing...' : buttonText}
       </button>
+
+      {showPhoneModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: '#fff', padding: 20, borderRadius: 8, width: 340, boxShadow: '0 6px 24px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: 0, marginBottom: 8 }}>Enter mobile number</h3>
+            <p style={{ marginTop: 0, marginBottom: 12, color: '#555', fontSize: 13 }}>Include country code (e.g. 919876543210)</p>
+            <input
+              autoFocus
+              value={phoneInput}
+              onChange={(e) => setPhoneInput(e.target.value)}
+              placeholder="919876543210"
+              style={{ width: '100%', padding: '8px 10px', marginBottom: 12, borderRadius: 4, border: '1px solid #ddd' }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => setShowPhoneModal(false)} style={{ padding: '8px 12px' }}>Cancel</button>
+              <button
+                type="button"
+                onClick={() => {
+                  const cleaned = phoneInput.trim();
+                  if (cleaned) {
+                    try { localStorage.setItem('userPhone', cleaned); } catch (e) { /* ignore */ }
+                    setShowPhoneModal(false);
+                    void doPayment(cleaned);
+                  } else {
+                    setError('Please enter a valid phone number');
+                  }
+                }}
+                style={{ padding: '8px 12px' }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

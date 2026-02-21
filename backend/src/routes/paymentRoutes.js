@@ -27,9 +27,9 @@ console.log('🔄 Payment router initializing...');
 console.log(`✅ Payment controller loaded: ${typeof paymentController.createOrder === 'function' ? 'OK' : 'MISSING'}`);
 
 // ===== HEALTH CHECK ENDPOINT =====
-// Quick verification that payment routes are working
+// Quick verification that payment routes are working and schema checks
 // GET /api/payment/health
-router.get('/health', (req, res) => {
+router.get('/health', async (req, res) => {
   console.log('📡 Payment health check received');
   const controllerStatus = {
     createOrder: typeof paymentController.createOrder === 'function' ? '✅' : '❌',
@@ -39,18 +39,46 @@ router.get('/health', (req, res) => {
     getPayment: typeof paymentController.getPayment === 'function' ? '✅' : '❌',
   };
 
-  res.status(200).json({
-    status: 'Payment API is running',
-    timestamp: new Date().toISOString(),
-    routes: {
-      'POST /api/payment/create-order': '✅ Ready',
-      'POST /api/payment/verify': '✅ Ready',
-      'POST /api/payment/webhook': '✅ Ready',
-      'GET /api/payment/order/:orderId': '✅ Ready',
-      'GET /api/payment/health': '✅ You are here',
-    },
-    controller: controllerStatus,
-  });
+  // Check database schema for required columns
+  try {
+    const db = require('../config/db.pool');
+
+    const [ordersRow] = await db.execute(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'updated_at'`
+    );
+    const [paymentsRow] = await db.execute(
+      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'created_at'`
+    );
+
+    const ordersUpdatedAt = !!(ordersRow && ordersRow[0] && ordersRow[0].cnt > 0);
+    const paymentsCreatedAt = !!(paymentsRow && paymentsRow[0] && paymentsRow[0].cnt > 0);
+
+    res.status(200).json({
+      status: 'Payment API is running',
+      timestamp: new Date().toISOString(),
+      routes: {
+        'POST /api/payment/create-order': '✅ Ready',
+        'POST /api/payment/verify': '✅ Ready',
+        'POST /api/payment/webhook': '✅ Ready',
+        'GET /api/payment/order/:orderId': '✅ Ready',
+        'GET /api/payment/health': '✅ You are here',
+      },
+      controller: controllerStatus,
+      schema: {
+        orders_updated_at: ordersUpdatedAt,
+        payments_created_at: paymentsCreatedAt
+      }
+    });
+  } catch (err) {
+    console.error('❌ Payment health schema check failed:', err && err.message ? err.message : err);
+    res.status(500).json({
+      status: 'Payment API running but schema check failed',
+      error: err && err.message ? err.message : String(err),
+      controller: controllerStatus
+    });
+  }
 });
 
 /**

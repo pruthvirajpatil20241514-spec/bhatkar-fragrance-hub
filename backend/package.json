@@ -14,6 +14,8 @@
     "db:add:product-images": "node src/database/scripts/addProductImages.js",
     "migrate:ml-pricing": "node src/database/scripts/migrateMlPricing.js",
     "sync:variants": "node src/database/scripts/syncVariants.js"
+    ,"migrate:payments": "node src/database/scripts/ensure-payments-columns.js"
+    ,"migrate:orders": "node src/database/scripts/ensure-orders-columns.js"
   },
   "keywords": [],
   "author": "",

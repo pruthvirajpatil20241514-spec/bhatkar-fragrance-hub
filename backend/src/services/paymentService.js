@@ -18,7 +18,7 @@ class PaymentService {
    * - Create Razorpay order
    * - Save order in database with PENDING status
    */
-  async createOrder(userId, productId, quantity = 1) {
+  async createOrder(userId, productId, quantity = 1, contact = null) {
     const conn = await db.getConnection();
     
     try {
@@ -63,11 +63,11 @@ class PaymentService {
         currency: 'INR',
         receipt: `order_${Date.now()}_${userId}_${productId}`,
         payment_capture: 1, // Auto-capture payment
-        notes: {
+        notes: Object.assign({
           userId,
           productId,
           productName: product.name
-        }
+        }, contact ? { contact } : {})
       });
 
       // 3. Save order in database
@@ -144,17 +144,49 @@ class PaymentService {
       }
 
       // 4. Save payment details
-      const [paymentResult] = await conn.execute(
-        `INSERT INTO payments (order_id, razorpay_payment_id, razorpay_signature, payment_status, created_at)
-         VALUES (?, ?, ?, ?, NOW())`,
-        [orderId, razorpayPaymentId, razorpaySignature, 'SUCCESS']
-      );
+      let paymentResult;
+      // Check if payments.created_at column exists to choose insert form
+      try {
+        const [createdAtCheck] = await conn.execute(
+          `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'created_at'`
+        );
+        const paymentsHasCreatedAt = createdAtCheck[0] && createdAtCheck[0].cnt > 0;
 
-      // 5. Update order status to PAID
-      await conn.execute(
-        'UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?',
-        ['PAID', orderId]
-      );
+        if (paymentsHasCreatedAt) {
+          [paymentResult] = await conn.execute(
+            `INSERT INTO payments (order_id, razorpay_payment_id, razorpay_signature, payment_status, created_at)
+             VALUES (?, ?, ?, ?, NOW())`,
+            [orderId, razorpayPaymentId, razorpaySignature, 'SUCCESS']
+          );
+        } else {
+          [paymentResult] = await conn.execute(
+            'INSERT INTO payments (order_id, razorpay_payment_id, razorpay_signature, payment_status) VALUES (?, ?, ?, ?)',
+            [orderId, razorpayPaymentId, razorpaySignature, 'SUCCESS']
+          );
+        }
+      } catch (err) {
+        logger.warn('⚠️ payments INSERT encountered error, propagating:', err && err.message ? err.message : err);
+        throw err;
+      }
+
+      // 5. Update order status to PAID in a way that tolerates missing updated_at
+      try {
+        const [updatedAtCheck] = await conn.execute(
+          `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'updated_at'`
+        );
+        const ordersHasUpdatedAt = updatedAtCheck[0] && updatedAtCheck[0].cnt > 0;
+
+        if (ordersHasUpdatedAt) {
+          await conn.execute('UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?', ['PAID', orderId]);
+        } else {
+          await conn.execute('UPDATE orders SET status = ? WHERE id = ?', ['PAID', orderId]);
+        }
+      } catch (err) {
+        logger.warn('⚠️ orders UPDATE failed unexpectedly:', err && err.message ? err.message : err);
+        throw err;
+      }
 
       await conn.commit();
 
@@ -236,10 +268,19 @@ class PaymentService {
     );
 
     if (orderRows.length > 0) {
-      await conn.execute(
-        `UPDATE payments SET payment_status = ? WHERE razorpay_payment_id = ?`,
-        ['SUCCESS', razorpayPaymentId]
-      );
+      try {
+        await conn.execute(
+          `UPDATE payments SET payment_status = ? WHERE razorpay_payment_id = ?`,
+          ['SUCCESS', razorpayPaymentId]
+        );
+      } catch (err) {
+        logger.warn('⚠️ payments UPDATE failed during webhook handling:', err && err.message ? err.message : err);
+        // Best-effort: attempt minimal update without touching timestamps
+        await conn.execute(
+          `UPDATE payments SET payment_status = ? WHERE razorpay_payment_id = ?`,
+          ['SUCCESS', razorpayPaymentId]
+        );
+      }
     }
   }
 
@@ -256,10 +297,23 @@ class PaymentService {
     );
 
     if (orderRows.length > 0) {
-      await conn.execute(
-        'UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?',
-        ['FAILED', orderRows[0].id]
-      );
+      try {
+        await conn.execute(
+          'UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?',
+          ['FAILED', orderRows[0].id]
+        );
+      } catch (err) {
+        const msg = err && err.message ? err.message : '';
+        logger.warn('⚠️ orders UPDATE (FAILED) failed, retrying without updated_at:', msg);
+        if (msg.includes("Unknown column 'updated_at'") || msg.includes('Unknown column')) {
+          await conn.execute(
+            'UPDATE orders SET status = ? WHERE id = ?',
+            ['FAILED', orderRows[0].id]
+          );
+        } else {
+          throw err;
+        }
+      }
     }
   }
 
@@ -270,10 +324,23 @@ class PaymentService {
     const orderData = payload.payload.order.entity;
     const razorpayOrderId = orderData.id;
 
-    await conn.execute(
-      'UPDATE orders SET status = ?, updated_at = NOW() WHERE razorpay_order_id = ? AND status = ?',
-      ['PAID', razorpayOrderId, 'PENDING']
-    );
+    try {
+      await conn.execute(
+        'UPDATE orders SET status = ?, updated_at = NOW() WHERE razorpay_order_id = ? AND status = ?',
+        ['PAID', razorpayOrderId, 'PENDING']
+      );
+    } catch (err) {
+      const msg = err && err.message ? err.message : '';
+      logger.warn('⚠️ orders UPDATE (PAID) failed, retrying without updated_at:', msg);
+      if (msg.includes("Unknown column 'updated_at'") || msg.includes('Unknown column')) {
+        await conn.execute(
+          'UPDATE orders SET status = ? WHERE razorpay_order_id = ? AND status = ?',
+          ['PAID', razorpayOrderId, 'PENDING']
+        );
+      } else {
+        throw err;
+      }
+    }
   }
 
   /**

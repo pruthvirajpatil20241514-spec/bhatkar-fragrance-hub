@@ -17,7 +17,7 @@ const { logger } = require('../utils/logger');
  */
 exports.createOrder = async (req, res) => {
   try {
-    const { productId, quantity = 1 } = req.body;
+    const { productId, quantity = 1, contact = null } = req.body;
 
     // Prefer userId from authenticated middleware (optionalAuth)
     // Allow guest checkout (userId will be null)
@@ -38,7 +38,7 @@ exports.createOrder = async (req, res) => {
     }
 
     // Create order; userId may be null for guest checkout
-    const result = await paymentService.createOrder(userId, productId, quantity);
+    const result = await paymentService.createOrder(userId, productId, quantity, contact);
 
     return res.status(200).json(result);
   } catch (error) {

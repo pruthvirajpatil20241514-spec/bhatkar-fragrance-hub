@@ -17,19 +17,23 @@ const navLinks = [
   { href: "/about", label: "About" },
 ];
 
-export function Header() {
+function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  // Handler to hide logo image if it fails to load
-  const hideLogo = (e: any) => { e.currentTarget.style.display = 'none'; };
+
+  const hideLogo = (e: any) => {
+    e.currentTarget.style.display = "none";
+  };
+
   const { toggleCart, totalItems } = useCart();
   const { items: wishlistItems } = useWishlist();
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container flex h-20 items-center justify-between">
+        
         {/* Mobile Menu Button */}
         <Button
           variant="ghost"
@@ -38,12 +42,18 @@ export function Header() {
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label="Toggle menu"
         >
-          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {isMobileMenuOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
         </Button>
 
-        {/* Logo - Brand Logo with Text */}
-        <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-          {/* Logo Image (place the provided logo at /bhatkar-logo.png in public/) */}
+        {/* Logo */}
+        <Link
+          to="/"
+          className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+        >
           <img
             src="/bhatkar-logo.png"
             alt="Bhatkar & Co"
@@ -51,12 +61,10 @@ export function Header() {
             className="w-10 h-10 object-contain"
           />
 
-          {/* Fallback Logo Text (visible if image is missing) */}
           <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 text-white font-bold text-lg">
             B
           </div>
 
-          {/* Logo Text */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -89,7 +97,9 @@ export function Header() {
               <span
                 className={cn(
                   "absolute -bottom-1 left-0 h-0.5 bg-primary transition-all duration-300",
-                  location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
+                  location.pathname === link.href
+                    ? "w-full"
+                    : "w-0 group-hover:w-full"
                 )}
               />
             </Link>
@@ -98,47 +108,55 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center space-x-2">
+          
+          {/* Search + Wishlist + Profile */}
           <div className="flex items-center">
             <SearchBar attachRight />
-            <Button 
-              variant="ghost" 
-              size="icon" 
+
+            <Button
+              variant="ghost"
+              size="icon"
               className="hidden md:flex relative rounded-l-none border-l border-border"
-              onClick={() => window.location.href = '/wishlist'}
+              onClick={() => (window.location.href = "/wishlist")}
               aria-label="Wishlist"
             >
-            <Heart className="h-5 w-5" />
-            {wishlistItems.length > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-medium text-destructive-foreground"
-              >
-                {wishlistItems.length}
-              </motion.span>
-            )}
-          </Button>
-          
-          {/* Profile / Auth Button */}
-          <div className="hidden md:flex relative">
-            {isAuthenticated ? (
-              <ProfileMenu />
-            ) : (
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setIsAuthModalOpen(true)}
-                aria-label="Account"
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            )}
-            {/* Auth Modal Dropdown */}
-            {!isAuthenticated && isAuthModalOpen && (
-              <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-            )}
+              <Heart className="h-5 w-5" />
+              {wishlistItems.length > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-medium text-destructive-foreground"
+                >
+                  {wishlistItems.length}
+                </motion.span>
+              )}
+            </Button>
+
+            {/* Profile/Auth */}
+            <div className="hidden md:flex relative">
+              {isAuthenticated ? (
+                <ProfileMenu />
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  aria-label="Account"
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+              )}
+
+              {!isAuthenticated && isAuthModalOpen && (
+                <AuthModal
+                  isOpen={isAuthModalOpen}
+                  onClose={() => setIsAuthModalOpen(false)}
+                />
+              )}
+            </div>
           </div>
 
+          {/* Cart Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -181,7 +199,7 @@ export function Header() {
                   <Link
                     to={link.href}
                     className={cn(
-                      "block text-lg font-medium transition-colors hover:text-primary py-2",
+                      "block text-lg font-medium hover:text-primary py-2",
                       location.pathname === link.href
                         ? "text-primary"
                         : "text-foreground"
@@ -192,14 +210,16 @@ export function Header() {
                   </Link>
                 </motion.div>
               ))}
+
               <div className="flex items-center space-x-4 pt-4 border-t border-border">
                 <SearchBar />
-                <Button 
-                  variant="ghost" 
+
+                <Button
+                  variant="ghost"
                   size="icon"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
-                    window.location.href = '/wishlist';
+                    window.location.href = "/wishlist";
                   }}
                   className="relative"
                 >
@@ -210,8 +230,9 @@ export function Header() {
                     </span>
                   )}
                 </Button>
-                <Button 
-                  variant="ghost" 
+
+                <Button
+                  variant="ghost"
                   size="icon"
                   onClick={() => setIsAuthModalOpen(true)}
                 >
@@ -225,3 +246,6 @@ export function Header() {
     </header>
   );
 }
+
+export default Header;
+export { Header };
