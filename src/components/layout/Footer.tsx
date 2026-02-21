@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
+`import { Link } from "react-router-dom";
 import { Facebook, Instagram, Twitter, Youtube, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { COMPANY_INFO } from "@/config/company";
 
 const footerLinks = {
   shop: [
@@ -33,10 +34,10 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
-  { icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-  { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
-  { icon: Youtube, href: "https://youtube.com", label: "YouTube" },
+  { icon: Facebook, href: COMPANY_INFO.social.facebook, label: "Facebook" },
+  { icon: Instagram, href: COMPANY_INFO.social.instagram, label: "Instagram" },
+  { icon: Twitter, href: COMPANY_INFO.social.twitter, label: "Twitter" },
+  { icon: Youtube, href: COMPANY_INFO.social.youtube, label: "YouTube" },
 ];
 
 export function Footer() {
@@ -48,7 +49,7 @@ export function Footer() {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
             <div className="text-center lg:text-left">
               <h3 className="font-display text-2xl font-semibold mb-2">
-                Join the Bhatkar & Co Family
+                Join the {COMPANY_INFO.name} Family
               </h3>
               <p className="text-ivory/70 max-w-md">
                 Subscribe to receive exclusive offers, early access to new arrivals, and fragrance tips from our experts.
@@ -76,14 +77,14 @@ export function Footer() {
           <div className="col-span-2 md:col-span-4 lg:col-span-1 mb-8 lg:mb-0">
             <Link to="/" className="inline-block mb-6">
               <span className="font-display text-2xl font-bold text-ivory">
-                Bhatkar & Co
+                {COMPANY_INFO.name}
               </span>
               <span className="block text-[10px] uppercase tracking-[0.3em] text-ivory/60">
-                Fine Perfumery
+                {COMPANY_INFO.tagline}
               </span>
             </Link>
             <p className="text-ivory/70 text-sm mb-6 max-w-xs">
-              Crafting exceptional fragrances with premium oils and timeless expertise since 1987. Made in India, loved worldwide.
+              Crafting exceptional fragrances with premium oils and timeless expertise since {COMPANY_INFO.established}. Made in India, loved worldwide.
             </p>
             <div className="flex space-x-4">
               {socialLinks.map((social) => (
@@ -159,7 +160,7 @@ export function Footer() {
         <div className="container py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-ivory/50">
-              © {new Date().getFullYear()} Bhatkar & Co. All rights reserved.
+              © {new Date().getFullYear()} {COMPANY_INFO.name}. All rights reserved.
             </p>
             <div className="flex flex-wrap justify-center gap-6">
               {footerLinks.legal.map((link) => (
