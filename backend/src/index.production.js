@@ -26,10 +26,12 @@ const { initializePool, closePool, getPoolStats } = require('./config/db.pool');
 
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'production';
-const API_BASE_URL = process.env.VITE_API_BASE_URL || `http://localhost:${PORT}`;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://bhatkar-fragrance-hub-5.onrender.com';
+const API_BASE_URL = process.env.VITE_API_BASE_URL || 'https://bhatkar-fragrance-hub-5.onrender.com/api';
 
 logger.info(`🚀 Starting server in ${NODE_ENV} environment`);
 logger.info(`📍 API Base URL: ${API_BASE_URL}`);
+logger.info(`📍 Frontend URL: ${FRONTEND_URL}`);
 
 // ========================================================================
 // EXPRESS APP SETUP
@@ -44,12 +46,13 @@ app.use(helmet()); // Secure HTTP headers
 app.use(compression()); // Gzip compression
 
 // --------  CORS --------
+const corsOrigins = [
+  'https://bhatkar-fragrance-hub-5.onrender.com',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    process.env.FRONTEND_URL || 'https://bhatkar-fragrance-hub.vercel.app'
-  ],
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -193,8 +196,8 @@ async function startServer() {
 
       logger.info('✅ Express server running');
       logger.info(`✅ Listening on port ${PORT}`);
-      logger.info(`✅ API endpoint: http://localhost:${PORT}/api`);
-      logger.info(`✅ Health check: http://localhost:${PORT}/health`);
+      logger.info(`✅ API endpoint: ${API_BASE_URL}`);
+      logger.info(`✅ Health check: ${FRONTEND_URL}/health`);
     });
 
     // ========================================================================

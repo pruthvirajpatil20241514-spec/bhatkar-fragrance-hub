@@ -17,11 +17,21 @@ const { httpLogStream } = require("./utils/logger");
 const app = express();
 
 // ===== CRITICAL: CORS MUST BE FIRST - Apply before all other middleware =====
+// Production CORS - allow only production frontend
+const corsOrigins = [
+  'https://bhatkar-fragrance-hub-5.onrender.com',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 // Manual CORS headers
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin;
+  if (corsOrigins.includes(origin) || !origin) {
+    res.header("Access-Control-Allow-Origin", origin || corsOrigins[0]);
+  }
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Max-Age", "3600");
   
   // Handle preflight requests
@@ -33,8 +43,8 @@ app.use((req, res, next) => {
 
 // Also use cors middleware as backup
 app.use(cors({
-  origin: "*",
-  credentials: false,
+  origin: corsOrigins,
+  credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
