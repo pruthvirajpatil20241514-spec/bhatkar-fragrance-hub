@@ -29,7 +29,6 @@ api.interceptors.request.use(
       "/products",
       "/variants",
       "/reviews",
-      "/images",
       "/payment/create-order",  // ✅ Payment creation is public (customers pay)
       "/payment/verify",        // ✅ Payment verification needs signature, not auth
     ];
