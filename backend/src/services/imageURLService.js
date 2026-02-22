@@ -6,6 +6,9 @@
  * 
  * Database stores ONLY object keys: products/filename.jpg
  * This service generates fresh signed URLs on each request
+ * 
+ * FIXED: Now properly handles external URLs (Unsplash, etc.)
+ *        vs S3-stored images without double-encoding
  */
 
 const { logger } = require('../utils/logger');
@@ -54,6 +57,33 @@ class ImageURLService {
   }
 
   /**
+   * Check if URL is an external URL (not stored in S3)
+   * External URLs should be returned as-is without signed URL generation
+   * 
+   * @param {string} url - URL to check
+   * @returns {boolean} - True if external URL
+   */
+  isExternalUrl(url) {
+    if (!url) return false;
+    // Check for common external image hosts
+    const externalHosts = [
+      'unsplash.com',
+      'pexels.com',
+      'pixabay.com',
+      'images.unsplash.com',
+      'plus.unsplash.com',
+      'randomuser.me',
+      'googleusercontent.com',
+      'fbcdn.net',
+      'instagram.com',
+      'cloudflare-ipfs.com'
+    ];
+    
+    const lowerUrl = url.toLowerCase();
+    return externalHosts.some(host => lowerUrl.includes(host));
+  }
+
+  /**
    * Generate fresh signed URL for an image object key
    * 
    * @param {string} objectKey - S3 object key (e.g., "products/image.jpg")
@@ -64,6 +94,7 @@ class ImageURLService {
       logger.warn('⚠️ generateSignedUrl called with empty objectKey');
       return this.defaultImageUrl;
     }
+    
     // If S3 is not available, return default image URL or the original key as best-effort
     if (!this.enabled || !this.s3) {
       logger && logger.debug && logger.debug('ImageURLService: S3 disabled — returning default image for', objectKey);
@@ -71,13 +102,16 @@ class ImageURLService {
     }
 
     try {
+      // CRITICAL: Decode the key first to handle double-encoded URLs
+      const decodedKey = decodeURIComponent(objectKey);
+      
       const signedUrl = this.s3.getSignedUrl('getObject', {
         Bucket: this.bucket,
-        Key: objectKey,
+        Key: decodedKey,
         Expires: this.urlExpiration,
       });
 
-      logger && logger.debug && logger.debug(`✅ Generated signed URL for: ${objectKey}`);
+      logger && logger.debug && logger.debug(`✅ Generated signed URL for: ${decodedKey}`);
       return signedUrl;
     } catch (error) {
       logger && logger.error && logger.error(`❌ Error generating signed URL for ${objectKey}:`, error && error.message ? error.message : error);
@@ -92,28 +126,51 @@ class ImageURLService {
    * this extracts just the object key
    * 
    * @param {string} signedUrlOrKey - Full URL or just object key
-   * @returns {string} - Clean object key
+   * @returns {string|null} - Clean object key, or null if external URL
    */
   extractObjectKey(signedUrlOrKey) {
     if (!signedUrlOrKey) return null;
 
-    // Already just a key (e.g., "products/image.jpg")
-    if (!signedUrlOrKey.includes('http')) {
-      return signedUrlOrKey;
+    // Decode the URL first to handle double-encoding
+    let decodedUrl = signedUrlOrKey;
+    try {
+      decodedUrl = decodeURIComponent(signedUrlOrKey);
+    } catch (e) {
+      // If decoding fails, use original
+      decodedUrl = signedUrlOrKey;
     }
 
-    // Extract from URL (e.g., from "https://.../.../bucket/products/image.jpg")
+    // Already just a key (e.g., "products/image.jpg") - not an HTTP URL
+    if (!decodedUrl.includes('http')) {
+      return decodedUrl;
+    }
+
+    // If it's an external URL (Unsplash, Pexels, etc.), return null to indicate external
+    if (this.isExternalUrl(decodedUrl)) {
+      return null; // Signal that this is an external URL
+    }
+
+    // Extract from S3 URL (e.g., from "https://t3.storageapi.dev/bucket/products/image.jpg")
     try {
-      const parts = signedUrlOrKey.split('/');
-      const objectKeyStartIdx = parts.findIndex(p => p === this.bucket) + 1;
-      if (objectKeyStartIdx > 0) {
-        return parts.slice(objectKeyStartIdx).join('/');
+      // Try to find bucket name in the URL path
+      const urlParts = decodedUrl.split('/');
+      const bucketIdx = urlParts.findIndex(p => p === this.bucket || p.includes('storageapi'));
+      
+      if (bucketIdx >= 0 && bucketIdx < urlParts.length - 1) {
+        // Get everything after the bucket
+        return urlParts.slice(bucketIdx + 1).join('/');
+      }
+      
+      // Alternative: try to find if URL contains /products/ path
+      const productsIdx = urlParts.findIndex(p => p === 'products');
+      if (productsIdx >= 0) {
+        return urlParts.slice(productsIdx).join('/');
       }
     } catch (error) {
-      logger.warn(`⚠️ Could not extract object key from URL: ${signedUrlOrKey}`);
+      logger.warn(`⚠️ Could not extract object key from URL: ${decodedUrl}`);
     }
 
-    return signedUrlOrKey; // Return as-is if can't parse
+    return null; // Return null for external URLs, key for S3 URLs
   }
 
   /**
@@ -134,10 +191,40 @@ class ImageURLService {
         };
       }
 
-      // Extract object key (handles both old URLs and fresh keys)
-      const objectKey = this.extractObjectKey(image.image_url) || '';
+      let imageUrl = image.image_url;
+      
+      // First, try to decode if it's double-encoded
+      try {
+        if (imageUrl.includes('%3A') || imageUrl.includes('%2F')) {
+          imageUrl = decodeURIComponent(imageUrl);
+        }
+      } catch (e) {
+        // Keep original if decode fails
+      }
 
-      // Generate fresh signed URL (or fallback default)
+      // Check if it's an external URL - return as-is without signed URL
+      if (this.isExternalUrl(imageUrl)) {
+        logger && logger.debug && logger.debug(`🔗 External URL detected: ${imageUrl.substring(0, 50)}...`);
+        return {
+          ...image,
+          image_url: imageUrl,
+          _is_external: true,
+        };
+      }
+
+      // Extract object key (handles both old URLs and fresh keys)
+      const objectKey = this.extractObjectKey(imageUrl);
+
+      // If objectKey is null, it's an external URL - return as-is
+      if (!objectKey) {
+        return {
+          ...image,
+          image_url: imageUrl,
+          _is_external: true,
+        };
+      }
+
+      // Generate fresh signed URL for S3-stored images
       const freshUrl = this.generateSignedUrl(objectKey);
 
       return {

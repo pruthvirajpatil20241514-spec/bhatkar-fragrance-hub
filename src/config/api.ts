@@ -4,7 +4,7 @@
  */
 
 export const API_BASE = import.meta.env.VITE_API_BASE_URL 
-  || "https://bhatkar-fragrance-hub-1.onrender.com/api";
+  || "https://bhatkar-fragrance-hub-5.onrender.com/api";
 
 export const API_ENDPOINTS = {
   // Auth

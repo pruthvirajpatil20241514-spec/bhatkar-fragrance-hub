@@ -21,10 +21,6 @@ function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  const hideLogo = (e: any) => {
-    e.currentTarget.style.display = "none";
-  };
-
   const { toggleCart, totalItems } = useCart();
   const { items: wishlistItems } = useWishlist();
   const { isAuthenticated } = useAuth();
@@ -54,17 +50,12 @@ function Header() {
           to="/"
           className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
         >
-          <img
-            src="/bhatkar-logo.png"
-            alt="Bhatkar & Co"
-            onError={hideLogo}
-            className="w-10 h-10 object-contain"
-          />
-
+          {/* Logo Icon */}
           <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 text-white font-bold text-lg">
             B
           </div>
 
+          {/* Logo Text */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -137,14 +128,14 @@ function Header() {
               {isAuthenticated ? (
                 <ProfileMenu />
               ) : (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsAuthModalOpen(true)}
-                  aria-label="Account"
-                >
-                  <User className="h-5 w-5" />
-                </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsAuthModalOpen(true)}
+              aria-label="Account"
+            >
+              <User className="h-5 w-5" />
+            </Button>
               )}
 
               {!isAuthenticated && isAuthModalOpen && (
