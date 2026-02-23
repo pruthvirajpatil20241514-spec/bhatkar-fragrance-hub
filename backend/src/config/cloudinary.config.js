@@ -34,8 +34,9 @@ const uploadToCloudinary = async (fileBuffer, fileName) => {
             reject(error);
           } else {
             logger.info(`✅ Image uploaded to Cloudinary: ${result.secure_url}`);
+            // Return public_id as the key (not full URL) - imageURLService will generate URLs dynamically
             resolve({
-              url: result.secure_url,
+              url: result.public_id,
               publicId: result.public_id,
               width: result.width,
               height: result.height,

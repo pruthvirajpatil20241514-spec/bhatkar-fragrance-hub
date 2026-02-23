@@ -85,10 +85,11 @@ async function uploadToRailway(fileBuffer, fileName) {
       Key: fileKey,
     });
 
-    const publicUrl = await getSignedUrl(s3Client, getCommand, { expiresIn: 604800 }); // 7 days
-    console.log(`✅ Signed URL generated (7 day expiry): ${publicUrl.substring(0, 80)}...`);
+    // Return OBJECT KEY instead of signed URL - this is the proper way
+    // The imageURLService will generate URLs dynamically when needed
+    console.log(`✅ Upload successful - returning object key: ${fileKey}`);
     
-    return publicUrl;
+    return fileKey;
   } catch (error) {
     console.error('❌ Upload failed:', {
       message: error.message,

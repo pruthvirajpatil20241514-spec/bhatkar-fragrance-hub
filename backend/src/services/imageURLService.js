@@ -36,6 +36,10 @@ class ImageURLService {
       ? `${process.env.S3_ENDPOINT}/${this.bucket}`
       : `https://t3.storageapi.dev/${this.bucket}`;
 
+    // Cloudinary configuration
+    this.cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    this.isCloudinaryConfigured = !!(this.cloudinaryCloudName && process.env.CLOUDINARY_API_KEY);
+
     // Initialize S3 client only if aws-sdk is present and credentials set
     try {
       if (AWS && process.env.S3_ENDPOINT && process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
@@ -108,6 +112,45 @@ class ImageURLService {
     
     // Return direct URL: baseStorageUrl + key
     return `${this.baseStorageUrl}/${objectKey}`;
+  }
+
+  /**
+   * Generate Cloudinary URL from public_id
+   * Cloudinary public_id is stored in database, this generates the full URL
+   * 
+   * @param {string} publicId - Cloudinary public_id (e.g., "bhatkar-fragrance-hub/products/image.jpg")
+   * @returns {string} - Full Cloudinary URL
+   */
+  generateCloudinaryUrl(publicId) {
+    if (!publicId) {
+      return this.defaultImageUrl;
+    }
+    
+    // Already a full URL, return as-is
+    if (publicId.includes('http')) {
+      return publicId;
+    }
+    
+    // Generate Cloudinary URL from public_id
+    if (this.isCloudinaryConfigured && this.cloudinaryCloudName) {
+      return `https://res.cloudinary.com/${this.cloudinaryCloudName}/image/upload/${publicId}`;
+    }
+    
+    // Fallback - return as-is
+    return publicId;
+  }
+
+  /**
+   * Check if the image key is a Cloudinary public_id
+   * 
+   * @param {string} key - Image key or URL
+   * @returns {boolean} - True if Cloudinary public_id
+   */
+  isCloudinaryKey(key) {
+    if (!key) return false;
+    // Cloudinary public_ids typically start with folder name like "bhatkar-fragrance-hub/"
+    return key.startsWith('bhatkar-fragrance-hub/') || 
+           key.startsWith('bhatkar-fragrance-hub\\');
   }
 
   /**
@@ -247,6 +290,14 @@ class ImageURLService {
         return {
           ...image,
           image_url: imageUrl,
+        };
+      }
+
+      // Check if it's a Cloudinary key
+      if (this.isCloudinaryKey(objectKey)) {
+        return {
+          ...image,
+          image_url: this.generateCloudinaryUrl(objectKey),
         };
       }
 
