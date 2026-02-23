@@ -181,7 +181,7 @@ export default function Shop() {
         (p) =>
           p.name.toLowerCase().includes(query) ||
           p.description.toLowerCase().includes(query) ||
-          p.brand.toLowerCase().includes(query)
+          (p as any).brand?.toLowerCase().includes(query)
       );
     }
 
@@ -200,17 +200,17 @@ export default function Shop() {
     // Sort
     switch (sortBy) {
       case "price-asc":
-        result.sort((a, b) => a.price - b.price);
+        result.sort((a: any, b: any) => a.price - b.price);
         break;
       case "price-desc":
-        result.sort((a, b) => b.price - a.price);
+        result.sort((a: any, b: any) => b.price - a.price);
         break;
       case "newest":
-        result.sort((a, b) => b.id - a.id);
+        result.sort((a: any, b: any) => b.id - a.id);
         break;
       case "popularity":
       default:
-        result.sort((a, b) => b.id - a.id);
+        result.sort((a: any, b: any) => b.id - a.id);
     }
 
     return result;
@@ -497,7 +497,6 @@ export default function Shop() {
                 </div>
               ) : (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                                    {console.log('🎨 Rendering', filteredProducts.length, 'products in grid')}
                   {filteredProducts.map((product, index) => (
                     <ProductCard
                       key={product.id}

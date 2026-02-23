@@ -140,14 +140,60 @@ exports.getProductWithImages = async (req, res) => {
   }
 };
 
-// Get all products with images (for listing page)
-exports.getAllProductsWithImages = async (req, res) => {
-  try {
-    // Protect against long-running DB queries (Render cold starts / Railway latency)
-    const dbPromise = ProductImage.getAllProductsWithImages();
+// ============================================================
+// IN-MEMORY CACHE FOR PRODUCTS (60 second TTL)
+// ============================================================
+const productCache = {
+  data: null,
+  timestamp: 0,
+  ttl: 60000 // 60 seconds
+};
 
-    // Timeout fallback - respond earlier than axios client timeout (axios=15s)
-    const timeoutMs = 8000; // 8s
+const getCachedProducts = () => {
+  const now = Date.now();
+  if (productCache.data && (now - productCache.timestamp) < productCache.ttl) {
+    return productCache.data;
+  }
+  return null;
+};
+
+const setCachedProducts = (products) => {
+  productCache.data = products;
+  productCache.timestamp = Date.now();
+};
+
+// Export cache clear for admin operations
+exports.clearProductCache = () => {
+  productCache.data = null;
+  productCache.timestamp = 0;
+};
+
+// ============================================================
+// GET ALL PRODUCTS WITH IMAGES - OPTIMIZED
+// ============================================================
+exports.getAllProductsWithImages = async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    // Check cache first
+    const cachedProducts = getCachedProducts();
+    if (cachedProducts) {
+      const duration = Date.now() - startTime;
+      logger.info(`✅ Cache HIT: ${cachedProducts.length} products (${duration}ms)`);
+      return res.status(200).json({
+        status: 'success',
+        data: cachedProducts,
+        total: cachedProducts.length,
+        cached: true,
+        responseTime: duration
+      });
+    }
+
+    logger.info('🔄 Cache MISS - Fetching from DB...');
+
+    // Fetch from DB with timeout protection
+    const dbPromise = ProductImage.getAllProductsWithImages();
+    const timeoutMs = 10000; // 10s timeout
     const timeoutPromise = new Promise((resolve, reject) => {
       setTimeout(() => reject(new Error('DB query timeout')), timeoutMs);
     });
@@ -156,7 +202,6 @@ exports.getAllProductsWithImages = async (req, res) => {
     try {
       products = await Promise.race([dbPromise, timeoutPromise]);
     } catch (err) {
-      // Log and return a graceful fallback so frontend doesn't hang
       logger.error(`Get all products DB timeout/failure: ${err.message}`);
       return res.status(503).json({
         status: 'error',
@@ -166,33 +211,46 @@ exports.getAllProductsWithImages = async (req, res) => {
       });
     }
 
-    // Refresh signed URLs dynamically (prevents expired URL issues)
+    // ============================================================
+    // FAST: Use direct URLs (BASE_STORAGE_URL + path) - NO S3 calls!
+    // ============================================================
     try {
       const imageURLService = require('../services/imageURLService');
-      // imageURLService internally falls back when S3/aws-sdk is unavailable
-      products = imageURLService.refreshProductsImageUrls(products);
-      logger.info(`Retrieved ${products.length} products with images (URLs refreshed)`);
+      // Use FAST method: refreshProductsDirectImageUrls - NO signing, no S3 API calls
+      products = imageURLService.refreshProductsDirectImageUrls(products);
+      
+      // Cache the result
+      setCachedProducts(products);
+      
+      const duration = Date.now() - startTime;
+      logger.info(`✅ Retrieved ${products.length} products with DIRECT URLs (${duration}ms)`);
     } catch (err) {
-      // Do not crash — return products with fallback image URLs
-      logger.warn('Image URL refresh failed, returning products with fallback images:', err && err.message ? err.message : err);
+      // Fallback - return products with original image URLs
+      logger.warn('Image URL processing failed:', err.message);
       const fallbackUrl = process.env.DEFAULT_PRODUCT_IMAGE_URL || '/uploads/default-product.png';
       products = products.map(p => ({
         ...p,
         images: (p.images || []).map(img => ({ ...img, image_url: img.image_url || fallbackUrl }))
       }));
-      logger.info(`Retrieved ${products.length} products with fallback images`);
+      setCachedProducts(products);
+      logger.info(`✅ Retrieved ${products.length} products with fallback images`);
     }
 
+    const duration = Date.now() - startTime;
     return res.status(200).json({
       status: 'success',
       data: products,
-      total: products.length
+      total: products.length,
+      cached: false,
+      responseTime: duration
     });
   } catch (error) {
-    logger.error(`Get all products with images error: ${error.message}`);
+    const duration = Date.now() - startTime;
+    logger.error(`Get all products with images error: ${error.message} (${duration}ms)`);
     return res.status(500).json({
       status: 'error',
       message: error.message || 'Error retrieving products',
+      responseTime: duration,
       ...(process.env.NODE_ENV !== 'production' ? { stack: error.stack } : {})
     });
   }

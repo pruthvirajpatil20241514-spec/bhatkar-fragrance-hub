@@ -78,6 +78,16 @@ app.get("/health", (req, res) => {
   });
 });
 
+// ===== API HEALTH CHECK ENDPOINT =====
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    message: "API is healthy"
+  });
+});
+
 app.get("/", (req, res) => {
   res.status(200).send({
     status: "success",
