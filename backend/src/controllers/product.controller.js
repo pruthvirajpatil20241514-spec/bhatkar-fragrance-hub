@@ -14,7 +14,7 @@ exports.getAllProducts = async (req, res) => {
         logger.error(`Get all products error: ${error.message}`);
         return res.status(500).send({
             status: 'error',
-            message: 'Internal server error.'
+            message: 'Internal server error.' 
         });
     }
 };
@@ -76,6 +76,7 @@ exports.createProduct = async (req, res) => {
             shipping_cost || 0,
             other_charges || 0
         );
+        logger.info(`Creating product: ${name}, brand: ${brand}, price: ${price}`);
         const data = await Product.create(product);
         logger.info(`Product created: ${data.id}`);
         return res.status(201).send({
@@ -85,9 +86,11 @@ exports.createProduct = async (req, res) => {
         });
     } catch (error) {
         logger.error(`Create product error: ${error.message}`);
+        logger.error(`Stack trace: ${error.stack}`);
+        // Return more detailed error for debugging
         return res.status(500).send({
             status: 'error',
-            message: 'Internal server error.'
+            message: error.message || 'Internal server error.'
         });
     }
 };
