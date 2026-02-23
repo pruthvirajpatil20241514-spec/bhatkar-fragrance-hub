@@ -62,10 +62,6 @@ exports.createProduct = async (req, res) => {
             name,
             brand,
             price,
-            original_price || null,
-            discount_percentage || 0,
-            shipping_cost || 0,
-            other_charges || 0,
             quantity_ml || 100,
             quantity_unit || 'ml',
             category,
@@ -74,7 +70,11 @@ exports.createProduct = async (req, res) => {
             stock || 0,
             is_best_seller || false,
             is_luxury_product || false,
-            is_active !== undefined ? is_active : 0
+            is_active !== undefined ? is_active : 0,
+            original_price || null,
+            discount_percentage || 0,
+            shipping_cost || 0,
+            other_charges || 0
         );
         const data = await Product.create(product);
         logger.info(`Product created: ${data.id}`);
