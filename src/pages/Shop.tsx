@@ -159,21 +159,12 @@ export default function Shop() {
     };
 
     // Fetch immediately on mount
-    fetchProducts();
+    // Note: Polling removed - using backend cache for better performance
+    // Users can manually refresh using the refresh button
 
-    // Poll for new products every 30 seconds; skip polling while user is typing a search
-    const pollInterval = setInterval(() => {
-      if (!searchQuery) {
-        fetchProducts();
-      } else {
-        console.debug('Polling skipped while user searching');
-      }
-    }, 30000);
-
-    // Cleanup interval on unmount
+    // Cleanup on unmount
     return () => {
       isMountedRef.current = false;
-      clearInterval(pollInterval);
     };
   }, []); // Empty dependency array - effect runs once on mount
 

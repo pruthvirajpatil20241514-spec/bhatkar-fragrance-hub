@@ -133,10 +133,10 @@ exports.getAllProducts = async (req, res) => {
       [limit, offset]
     );
 
-    // Parse and format response with signed URLs
+    // Parse and format response with FAST direct URLs (no signing for list views)
     const formattedProducts = products.map(product => {
       const parsedImages = parseJSON(product.images);
-      const imagesWithSignedUrls = imageURLService.generateSignedUrlsForImages(parsedImages);
+      const imagesWithDirectUrls = imageURLService.generateDirectUrlsForImages(parsedImages);
       return {
         ...product,
         price: parseFloat(product.price),
@@ -145,7 +145,7 @@ exports.getAllProducts = async (req, res) => {
         shipping_cost: parseFloat(product.shipping_cost),
         other_charges: parseFloat(product.other_charges),
         avg_rating: parseFloat(product.avg_rating),
-        images: imagesWithSignedUrls,
+        images: imagesWithDirectUrls,
         final_price: calculateFinalPrice(product)
       };
     });

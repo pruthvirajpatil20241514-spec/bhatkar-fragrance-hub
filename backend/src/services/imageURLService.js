@@ -30,6 +30,11 @@ class ImageURLService {
     this.bucket = process.env.S3_BUCKET || 'bhatkar-images';
     this.urlExpiration = Number(process.env.S3_URL_EXPIRES_SEC || 604800); // default 7 days
     this.defaultImageUrl = process.env.DEFAULT_PRODUCT_IMAGE_URL || '/uploads/default-product.png';
+    
+    // Base storage URL for direct access (no signed URLs needed for public reads)
+    this.baseStorageUrl = process.env.S3_ENDPOINT 
+      ? `${process.env.S3_ENDPOINT}/${this.bucket}`
+      : `https://t3.storageapi.dev/${this.bucket}`;
 
     // Initialize S3 client only if aws-sdk is present and credentials set
     try {
@@ -84,7 +89,30 @@ class ImageURLService {
   }
 
   /**
+   * Generate FAST direct URL for an image (no signing - for list views)
+   * Returns simple URL: BASE_STORAGE_URL + objectKey
+   * Much faster than signed URLs for bulk requests
+   * 
+   * @param {string} objectKey - S3 object key (e.g., "products/image.jpg")
+   * @returns {string} - Direct URL
+   */
+  generateDirectUrl(objectKey) {
+    if (!objectKey) {
+      return this.defaultImageUrl;
+    }
+    
+    // Already a full URL, return as-is
+    if (objectKey.includes('http')) {
+      return objectKey;
+    }
+    
+    // Return direct URL: baseStorageUrl + key
+    return `${this.baseStorageUrl}/${objectKey}`;
+  }
+
+  /**
    * Generate fresh signed URL for an image object key
+   * Use ONLY for private/signed content - slower but authenticated
    * 
    * @param {string} objectKey - S3 object key (e.g., "products/image.jpg")
    * @returns {string} - Fresh signed URL valid for 7 days
@@ -171,6 +199,63 @@ class ImageURLService {
     }
 
     return null; // Return null for external URLs, key for S3 URLs
+  }
+
+  /**
+   * FAST: Generate direct URLs for images (no signing - for list views)
+   * Much faster than signed URLs - no S3 API calls needed
+   * Use this for product lists, grids, and any bulk operations
+   * 
+   * @param {Array} images - Array of image objects with 'image_url' field
+   * @returns {Array} - Same images with direct URLs
+   */
+  generateDirectUrlsForImages(images) {
+    if (!Array.isArray(images)) {
+      return images;
+    }
+    return images.map((image) => {
+      if (!image || !image.image_url) {
+        return {
+          ...image,
+          image_url: this.defaultImageUrl,
+        };
+      }
+
+      let imageUrl = image.image_url;
+      
+      // Decode if double-encoded
+      try {
+        if (imageUrl.includes('%3A') || imageUrl.includes('%2F')) {
+          imageUrl = decodeURIComponent(imageUrl);
+        }
+      } catch (e) {
+        // Keep original if decode fails
+      }
+
+      // External URLs - return as-is
+      if (this.isExternalUrl(imageUrl)) {
+        return {
+          ...image,
+          image_url: imageUrl,
+        };
+      }
+
+      // Extract object key
+      const objectKey = this.extractObjectKey(imageUrl);
+
+      if (!objectKey) {
+        return {
+          ...image,
+          image_url: imageUrl,
+        };
+      }
+
+      // Use FAST direct URL (no signing!)
+      return {
+        ...image,
+        image_url: this.generateDirectUrl(objectKey),
+      };
+    });
   }
 
   /**
@@ -264,6 +349,39 @@ class ImageURLService {
     }
 
     return products.map(product => this.refreshProductImageUrls(product));
+  }
+
+  /**
+   * FAST: Refresh direct URLs for a product's images (no signing)
+   * Use for list views - much faster than signed URLs
+   * 
+   * @param {Object} product - Product object with images array
+   * @returns {Object} - Same product with direct URLs
+   */
+  refreshProductDirectImageUrls(product) {
+    if (!product || !product.images) {
+      return product;
+    }
+
+    return {
+      ...product,
+      images: this.generateDirectUrlsForImages(product.images)
+    };
+  }
+
+  /**
+   * FAST: Refresh direct URLs for multiple products (no signing)
+   * Use for list views - much faster than signed URLs
+   * 
+   * @param {Array} products - Array of products
+   * @returns {Array} - Same products with direct URLs
+   */
+  refreshProductsDirectImageUrls(products) {
+    if (!Array.isArray(products)) {
+      return products;
+    }
+
+    return products.map(product => this.refreshProductDirectImageUrls(product));
   }
 }
 
