@@ -17,37 +17,22 @@ const { httpLogStream } = require("./utils/logger");
 const app = express();
 
 // ===== CRITICAL: CORS MUST BE FIRST - Apply before all other middleware =====
-// Production CORS - allow only production frontend
-const corsOrigins = [
-  process.env.FRONTEND_URL
+const allowedOrigins = [
+  "https://bhatkar-fragrance-hub-5.onrender.com",
+  process.env.FRONTEND_URL // Keep env variable as backup just in case
 ].filter(Boolean);
 
-// Manual CORS headers
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (corsOrigins.includes(origin) || !origin) {
-    res.header("Access-Control-Allow-Origin", origin || corsOrigins[0]);
-  }
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.header("Access-Control-Max-Age", "3600");
-
-  // Handle preflight requests
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-  next();
-});
-
-// Also use cors middleware as backup
-app.use(cors({
-  origin: corsOrigins,
+const corsOptions = {
+  origin: allowedOrigins,
   credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"]
+};
+
+// Use cors middleware
+app.use(cors(corsOptions));
+// Handle preflight requests
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

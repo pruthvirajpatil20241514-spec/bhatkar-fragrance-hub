@@ -24,9 +24,10 @@ if (!connectionString) {
 const poolConfig = {
     connectionString: connectionString,
     // Connection Pool Settings
-    max: NODE_ENV === 'production' ? 15 : 10,  // Max connections
+    max: 10,  // Max connections restricted to 10 for Supabase connection pooler
     idleTimeoutMillis: 30000,  // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 10000,  // Return error after 10s if connection not established
+    connectionTimeoutMillis: 5000,  // Prevent requests from hanging - fail fast!
+    query_timeout: 10000, // Drop queries that take more than 10s
     // SSL Configuration for Supabase
     ssl: {
         rejectUnauthorized: false
