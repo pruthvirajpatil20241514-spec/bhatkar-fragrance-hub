@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, '0.0.0.0', async () => {
     logger.info(`Running on PORT ${PORT}`);
 
-    logger.info('✓ MySQL connection pool is ready to use');
+    logger.info('✓ PostgreSQL/Supabase connection pool is ready to use');
 });
 
 // Handle server errors (e.g., port already in use)
