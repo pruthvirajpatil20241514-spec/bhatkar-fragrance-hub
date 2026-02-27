@@ -142,14 +142,18 @@ exports.getProductWithImages = async (req, res) => {
     if (error.kind === 'not_found') {
       return res.status(404).json({
         status: 'error',
-        message: `Product with id ${req.params.productId} not found`
+        message: `Product with id ${req.params.id} not found`
       });
     }
     logger.error(`Get product with images error: ${error.message}`);
+    console.error("FULL ERROR DETAIL:", error);
+
     return res.status(500).json({
       status: 'error',
       message: error.message || 'Error retrieving product',
-      ...(process.env.NODE_ENV !== 'production' ? { stack: error.stack } : {})
+      error: error.toString(),
+      stack: error.stack,
+      hint: "Check if all columns exist and if imageURLService is correctly required"
     });
   }
 };
