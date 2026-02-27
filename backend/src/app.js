@@ -86,11 +86,8 @@ app.get("/api/health", async (req, res) => {
     const [rows] = await db.query('SELECT 1');
 
     res.status(200).json({
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      message: "API is healthy",
-      database: { status: 'connected', result: rows.length > 0 ? 'OK' : 'ERROR' }
+      status: "ok",
+      database: "connected"
     });
   } catch (error) {
     res.status(500).json({

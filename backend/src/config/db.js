@@ -52,6 +52,14 @@ async function verifyConnection(maxAttempts = 5) {
             return true;
         } catch (err) {
             logger.error(`❌ DB Connection failed (attempt ${attempt}/${maxAttempts}): ${err.message}`);
+            logger.error('Full connection error details:', err);
+
+            // Diagnostics per requirements
+            logger.error('Diagnostic Checks:');
+            logger.error('- SSL configuration: Ensure ssl: { rejectUnauthorized: false } is set.');
+            logger.error('- Port: Ensure port 6543 is used for Supabase connection pooler.');
+            logger.error('- Password: Ensure password encoding is correct in DATABASE_URL (e.g., %40 for @).');
+
             if (attempt === maxAttempts) {
                 logger.error('CRITICAL: Could not establish database connection. Checks your .env variables.');
             } else {
