@@ -26,7 +26,11 @@ async function runStartupMigrations(db, loggerUtil = logger) {
     // Migration 2: Add is_best_seller column
     await addIsBestSellerColumn(db, loggerUtil);
 
-    // Migration 3: Create indexes
+    // Migration 3: Add product_images columns
+    await addImageFormatColumn(db, loggerUtil);
+    await addIsThumbnailColumn(db, loggerUtil);
+
+    // Migration 4: Create indexes
     await createIndexes(db, loggerUtil);
 
     loggerUtil.info('✅ All startup migrations completed successfully');
@@ -78,7 +82,6 @@ async function addIsActiveColumn(db, loggerUtil) {
  */
 async function addIsBestSellerColumn(db, loggerUtil) {
   try {
-    // Ported to PostgreSQL
     const [columns] = await db.query(`
       SELECT column_name 
       FROM information_schema.columns 
@@ -92,7 +95,6 @@ async function addIsBestSellerColumn(db, loggerUtil) {
       return;
     }
 
-    // Add the column
     loggerUtil.info('  Adding is_best_seller column to products table...');
     await db.query(`
       ALTER TABLE products 
@@ -103,6 +105,68 @@ async function addIsBestSellerColumn(db, loggerUtil) {
 
   } catch (error) {
     loggerUtil.warn('Could not add is_best_seller column:', error.message);
+  }
+}
+
+/**
+ * Add image_format column to product_images if it doesn't exist
+ */
+async function addImageFormatColumn(db, loggerUtil) {
+  try {
+    const [columns] = await db.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'product_images' 
+      AND table_schema = 'public'
+      AND column_name = 'image_format'
+    `);
+
+    if (columns.length > 0) {
+      loggerUtil.debug('✓ Column image_format already exists');
+      return;
+    }
+
+    loggerUtil.info('  Adding image_format column to product_images table...');
+    await db.query(`
+      ALTER TABLE product_images 
+      ADD COLUMN image_format VARCHAR(50) DEFAULT 'jpg'
+    `);
+
+    loggerUtil.info('  ✅ Added image_format column');
+
+  } catch (error) {
+    loggerUtil.warn('Could not add image_format column:', error.message);
+  }
+}
+
+/**
+ * Add is_thumbnail column to product_images if it doesn't exist
+ */
+async function addIsThumbnailColumn(db, loggerUtil) {
+  try {
+    const [columns] = await db.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'product_images' 
+      AND table_schema = 'public'
+      AND column_name = 'is_thumbnail'
+    `);
+
+    if (columns.length > 0) {
+      loggerUtil.debug('✓ Column is_thumbnail already exists');
+      return;
+    }
+
+    loggerUtil.info('  Adding is_thumbnail column to product_images table...');
+    await db.query(`
+      ALTER TABLE product_images 
+      ADD COLUMN is_thumbnail BOOLEAN DEFAULT FALSE
+    `);
+
+    loggerUtil.info('  ✅ Added is_thumbnail column');
+
+  } catch (error) {
+    loggerUtil.warn('Could not add is_thumbnail column:', error.message);
   }
 }
 
@@ -183,5 +247,7 @@ module.exports = {
   runStartupMigrations,
   addIsActiveColumn,
   addIsBestSellerColumn,
+  addImageFormatColumn,
+  addIsThumbnailColumn,
   createIndexes
 };
