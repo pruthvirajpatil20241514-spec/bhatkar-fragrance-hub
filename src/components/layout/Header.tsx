@@ -27,9 +27,9 @@ function Header() {
   const location = useLocation();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container flex h-20 items-center justify-between">
-        
+    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 transition-all duration-300">
+      <div className="container mx-auto px-4 flex h-20 items-center justify-between">
+
         {/* Mobile Menu Button */}
         <Button
           variant="ghost"
@@ -57,16 +57,16 @@ function Header() {
 
           {/* Logo Text */}
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0, x: -5 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="flex flex-col items-start"
           >
-            <span className="font-display text-lg font-bold tracking-tight text-foreground leading-none">
-              Bhatkar & Co
+            <span className="font-display text-xl font-black tracking-tighter text-foreground leading-none group-hover:text-primary transition-colors duration-300">
+              BHATKAR
             </span>
-            <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-              Perfumery
+            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary/70 leading-relaxed">
+              & CO. PERFUMERY
             </span>
           </motion.div>
         </Link>
@@ -78,19 +78,18 @@ function Header() {
               key={link.href}
               to={link.href}
               className={cn(
-                "text-sm font-medium transition-colors hover:text-primary relative group",
+                "text-[13px] uppercase tracking-[0.1em] font-bold transition-all duration-300 hover:text-primary relative group py-2",
                 location.pathname === link.href
-                  ? "text-primary"
-                  : "text-muted-foreground"
+                  ? "text-primary px-2"
+                  : "text-foreground/70 px-2"
               )}
             >
               {link.label}
-              <span
+              <motion.span
+                layoutId="nav-underline"
                 className={cn(
-                  "absolute -bottom-1 left-0 h-0.5 bg-primary transition-all duration-300",
-                  location.pathname === link.href
-                    ? "w-full"
-                    : "w-0 group-hover:w-full"
+                  "absolute bottom-0 left-0 h-[2px] bg-primary rounded-full",
+                  location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full transition-all duration-300"
                 )}
               />
             </Link>
@@ -99,7 +98,7 @@ function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center space-x-2">
-          
+
           {/* Search + Wishlist + Profile */}
           <div className="flex items-center">
             <SearchBar attachRight />
@@ -128,14 +127,14 @@ function Header() {
               {isAuthenticated ? (
                 <ProfileMenu />
               ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsAuthModalOpen(true)}
-              aria-label="Account"
-            >
-              <User className="h-5 w-5" />
-            </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  aria-label="Account"
+                >
+                  <User className="h-5 w-5" />
+                </Button>
               )}
 
               {!isAuthenticated && isAuthModalOpen && (

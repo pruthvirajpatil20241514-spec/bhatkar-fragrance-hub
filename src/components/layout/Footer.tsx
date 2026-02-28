@@ -42,61 +42,73 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="bg-charcoal text-ivory">
+    <footer className="relative bg-[#0F1115] text-white overflow-hidden pt-20 border-t border-white/5">
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/20 rounded-full blur-[120px]" />
+      </div>
+
       {/* Newsletter Section */}
-      <div className="border-b border-ivory/10">
-        <div className="container py-16">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-            <div className="text-center lg:text-left">
-              <h3 className="font-display text-2xl font-semibold mb-2">
-                Join the {COMPANY_INFO.name} Family
-              </h3>
-              <p className="text-ivory/70 max-w-md">
-                Subscribe to receive exclusive offers, early access to new arrivals, and fragrance tips from our experts.
-              </p>
-            </div>
-            <form className="flex w-full max-w-md gap-3">
+      <div className="relative container mx-auto px-4 mb-20">
+        <div className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-md border border-white/10 rounded-[2.5rem] p-8 md:p-12 lg:p-16 flex flex-col lg:flex-row items-center justify-between gap-10 shadow-2xl">
+          <div className="max-w-xl text-center lg:text-left">
+            <h3 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight mb-4 leading-tight">
+              Elevate Your <span className="text-primary italic">Senses</span>.
+            </h3>
+            <p className="text-white/60 text-lg font-medium">
+              Join our mailing list for exclusive early access to luxury collections and artisanal fragrance insights.
+            </p>
+          </div>
+          <form className="w-full lg:max-w-md group">
+            <div className="relative flex p-1.5 bg-white/5 border border-white/10 rounded-2xl focus-within:border-primary/50 transition-all duration-300">
               <Input
                 type="email"
                 placeholder="Enter your email"
-                className="bg-ivory/10 border-ivory/20 text-ivory placeholder:text-ivory/50 focus:border-primary"
+                className="bg-transparent border-none text-white placeholder:text-white/30 h-12 px-4 shadow-none focus-visible:ring-0"
+                required
               />
-              <Button variant="gold" className="shrink-0">
-                <Mail className="h-4 w-4 mr-2" />
+              <Button variant="gold" className="rounded-xl px-8 h-12 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 font-bold uppercase tracking-widest text-[11px]">
                 Subscribe
               </Button>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
 
       {/* Main Footer Content */}
-      <div className="container py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+      <div className="container mx-auto px-4 pb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-16">
           {/* Brand Column */}
-          <div className="col-span-2 md:col-span-4 lg:col-span-1 mb-8 lg:mb-0">
-            <Link to="/" className="inline-block mb-6">
-              <span className="font-display text-2xl font-bold text-ivory">
-                {COMPANY_INFO.name}
-              </span>
-              <span className="block text-[10px] uppercase tracking-[0.3em] text-ivory/60">
-                {COMPANY_INFO.tagline}
-              </span>
+          <div className="lg:col-span-2 space-y-8">
+            <Link to="/" className="flex items-center gap-4 group">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-primary/20 group-hover:scale-105 transition-transform duration-500">
+                B
+              </div>
+              <div>
+                <span className="block font-display text-2xl font-black text-white tracking-tighter">
+                  BHATKAR
+                </span>
+                <span className="block text-[10px] uppercase tracking-[0.4em] text-primary/70 font-bold">
+                  PERFUMERY
+                </span>
+              </div>
             </Link>
-            <p className="text-ivory/70 text-sm mb-6 max-w-xs">
-              Crafting exceptional fragrances with premium oils and timeless expertise since {COMPANY_INFO.established}. Made in India, loved worldwide.
+            <p className="text-white/50 text-base leading-relaxed max-w-sm">
+              Crafting exceptional artisanal fragrances with premium oils and heritage expertise since {COMPANY_INFO.established}.
+              Discover the soul of Indian perfumery.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex gap-4">
               {socialLinks.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-full bg-ivory/10 hover:bg-primary transition-colors duration-300"
+                  className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center text-white/50 hover:bg-primary hover:text-white hover:scale-110 transition-all duration-300 border border-white/10"
                   aria-label={social.label}
                 >
-                  <social.icon className="h-4 w-4" />
+                  <social.icon className="h-5 w-5" />
                 </a>
               ))}
             </div>
@@ -156,18 +168,18 @@ export function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-ivory/10">
-        <div className="container py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-ivory/50">
-              © {new Date().getFullYear()} {COMPANY_INFO.name}. All rights reserved.
+      <div className="border-t border-white/5 py-10">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <p className="text-sm text-white/30 font-medium">
+              &copy; {new Date().getFullYear()} Bhatkar Perfumery. All rights reserved.
             </p>
-            <div className="flex flex-wrap justify-center gap-6">
+            <div className="flex flex-wrap justify-center gap-8">
               {footerLinks.legal.map((link) => (
                 <Link
                   key={link.href}
                   to={link.href}
-                  className="text-sm text-ivory/50 hover:text-ivory transition-colors duration-300"
+                  className="text-xs font-bold uppercase tracking-widest text-white/30 hover:text-primary transition-colors duration-300"
                 >
                   {link.label}
                 </Link>

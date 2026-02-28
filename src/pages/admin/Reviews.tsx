@@ -27,6 +27,7 @@ import api from "@/lib/axios";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { cn, getImageUrl } from "@/lib/utils";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 
 interface Product {
   id: number;
@@ -251,41 +252,9 @@ export default function AdminReviews() {
     </div>
   );
 
-  if (!isAdmin) return null;
-
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50 pb-20">
-      {/* Premium Header */}
-      <div className="bg-background border-b border-border sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold font-display tracking-tight text-foreground flex items-center gap-2">
-                <MessageSquare className="h-8 w-8 text-primary" />
-                Review Management
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Moderate customer feedback, curate featured reviews, and maintain store reputation.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadProducts}
-                disabled={productsLoading}
-                className="gap-2"
-              >
-                <RefreshCw className={cn("h-4 w-4", productsLoading && "animate-spin")} />
-                Refresh Products
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 mt-8">
+    <AdminLayout title="Review Management" activeTab="reviews">
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
           {/* Left Column: Product Navigation */}
@@ -659,6 +628,6 @@ export default function AdminReviews() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }

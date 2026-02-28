@@ -16,12 +16,8 @@ import Orders from "./pages/Orders";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
-import AdminTest from "./pages/AdminTest";
 import AdminDashboard from "./pages/admin/Dashboard";
-import AdminProducts from "./pages/admin/Products";
-import AdminOrders from "./pages/admin/Orders";
 import AdminManage from "./pages/admin/Manage";
-import AdminProductImageManager from "./pages/AdminProductImageManager";
 import AdminReviews from "./pages/admin/Reviews";
 import NotFound from "./pages/NotFound";
 
@@ -47,16 +43,14 @@ const App = () => (
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />
-                <Route path="/admin-test" element={<AdminTest />} />
-
                 {/* Protected Admin Routes */}
-                <Route 
-                  path="/admin/dashboard" 
+                <Route
+                  path="/admin/dashboard"
                   element={
                     <ProtectedRoute requiredRole="admin">
                       <AdminDashboard />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
                 <Route
                   path="/admin/manage/product"
@@ -88,14 +82,6 @@ const App = () => (
                   element={
                     <ProtectedRoute requiredRole="admin">
                       <AdminManage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin/products/:id/images"
-                  element={
-                    <ProtectedRoute requiredRole="admin">
-                      <AdminProductImageManager />
                     </ProtectedRoute>
                   }
                 />

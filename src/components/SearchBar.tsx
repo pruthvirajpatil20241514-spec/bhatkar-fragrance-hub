@@ -169,47 +169,76 @@ export function SearchBar(props: { attachRight?: boolean } = {}) {
       <AnimatePresence>
         {isOpen && searchQuery && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 right-0 md:left-auto md:right-0 md:w-96 mt-2 bg-background border border-border rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto md:max-h-[500px]"
+            initial={{ opacity: 0, y: 15, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.98 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="absolute top-full left-0 right-0 md:left-auto md:right-0 md:w-[450px] mt-4 bg-white/90 backdrop-blur-2xl border border-primary/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-50 overflow-hidden"
           >
-            {results.length > 0 ? (
-              <div className="divide-y divide-border">
-                {results.map((product) => (
-                  <Link
-                    key={product.id}
-                    to={`/product/${product.id}`}
-                    onClick={() => {
-                      setIsOpen(false);
-                      setSearchQuery("");
-                    }}
-                    className="block p-3 sm:p-4 hover:bg-accent transition-colors active:bg-accent/80"
-                  >
-                    <div className="flex gap-3 sm:gap-4">
-                      <img
-                        src={getProductImage(product.images)}
-                        alt={product.name}
-                        className="h-14 w-14 sm:h-16 sm:w-16 rounded object-cover flex-shrink-0"
-                        onError={(e) => handleImageError(e as any)}
-                      />
+            <div className="p-4 border-b border-border/40 bg-secondary/20">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-2">
+                Search Results ({results.length})
+              </p>
+            </div>
+
+            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+              {results.length > 0 ? (
+                <div className="p-2 space-y-1">
+                  {results.map((product) => (
+                    <Link
+                      key={product.id}
+                      to={`/product/${product.id}`}
+                      onClick={() => {
+                        setIsOpen(false);
+                        setSearchQuery("");
+                      }}
+                      className="flex items-center gap-4 p-3 rounded-2xl hover:bg-primary/5 transition-all duration-300 group"
+                    >
+                      <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-secondary flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
+                        <img
+                          src={getProductImage(product.images)}
+                          alt={product.name}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          onError={(e) => handleImageError(e as any)}
+                        />
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm mb-1 truncate">{product.name}</h4>
-                        <p className="text-xs text-muted-foreground mb-2 truncate">
+                        <h4 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">{product.name}</h4>
+                        <p className="text-[11px] text-muted-foreground font-medium mb-1 truncate capitalize">
                           {product.category} • {product.fragranceType}
                         </p>
-                        <p className="font-semibold text-primary text-sm">
+                        <p className="font-black text-primary text-sm flex items-center gap-2">
                           {formatPrice(product.price)}
+                          {product.isLuxury && (
+                            <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Luxury</span>
+                          )}
                         </p>
                       </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="p-4 text-center text-muted-foreground">
-                No perfumes found. Try another search.
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <SearchIcon className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-bold text-foreground mb-1">No matches found</h3>
+                  <p className="text-sm text-muted-foreground px-10">
+                    We couldn't find any fragrances matching "{searchQuery}".
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {results.length > 0 && (
+              <div className="p-3 bg-secondary/10 border-t border-border/40 text-center">
+                <Link
+                  to="/shop"
+                  className="text-[11px] font-bold uppercase tracking-widest text-primary hover:text-accent transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  View All Products
+                </Link>
               </div>
             )}
           </motion.div>

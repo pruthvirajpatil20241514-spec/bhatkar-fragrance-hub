@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { LogOut, Package, ShoppingCart, TrendingUp, BarChart3, Star, Loader2, AlertCircle, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -67,29 +68,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="sticky top-0 border-b border-border bg-background/95 backdrop-blur z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold font-display">Admin Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Manage your boutique's operations</p>
-          </div>
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="gap-2 hover:bg-destructive/10 hover:text-destructive transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+    <AdminLayout title="System Overview" activeTab="dashboard">
+      <div className="space-y-8">
         {/* Statistics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Total Products Card */}
           <Card className="p-6 hover:shadow-lg transition-all hover:-translate-y-1">
             <div className="flex items-start justify-between">
@@ -229,6 +211,6 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
-    </div>
+    </AdminLayout>
   );
 }
