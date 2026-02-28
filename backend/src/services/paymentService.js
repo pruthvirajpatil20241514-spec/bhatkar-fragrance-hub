@@ -27,17 +27,19 @@ class PaymentService {
       await conn.query('BEGIN');
 
       // 1. Fetch product price from database (NEVER from frontend)
-      const [productRows] = await conn.query(
+      const queryResult = await conn.query(
         'SELECT id, name, price FROM products WHERE id = $1 AND is_active = true',
         [productId]
       );
+
+      const productRows = queryResult.rows;
 
       if (!productRows || productRows.length === 0) {
         throw new Error('Product not found or inactive');
       }
 
       const product = productRows[0];
-      const unitPrice = parseFloat(product.price);
+      const unitPrice = Number(product.price);
       const totalAmount = unitPrice * quantity;
 
       // Validate amount
@@ -60,7 +62,7 @@ class PaymentService {
 
       // 3. Save order in database
       // Using RETURNING * to get the SERIAL id
-      const [result] = await conn.query(
+      const orderInsertResult = await conn.query(
         `INSERT INTO orders (user_id, product_id, quantity, total_amount, razorpay_order_id, status, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *`,
         [userId, productId, quantity, totalAmount, razorpayOrder.id, 'PENDING']
@@ -68,7 +70,7 @@ class PaymentService {
 
       await conn.query('COMMIT');
 
-      const orderId = result.id;
+      const orderId = orderInsertResult.rows[0].id;
       logger.info(`✅ Order created - Order ID: ${orderId}, Razorpay: ${razorpayOrder.id}, Amount: ₹${totalAmount}`);
 
       return {
@@ -102,10 +104,12 @@ class PaymentService {
       await conn.query('BEGIN');
 
       // 1. Fetch order from database
-      const [orderRows] = await conn.query(
+      const orderQueryResult = await conn.query(
         'SELECT id, razorpay_order_id, status, total_amount FROM orders WHERE id = $1',
         [orderId]
       );
+
+      const orderRows = orderQueryResult.rows;
 
       if (!orderRows || orderRows.length === 0) {
         throw new Error('Order not found');
@@ -134,11 +138,13 @@ class PaymentService {
       }
 
       // 4. Save payment details
-      const [paymentResult] = await conn.query(
+      const paymentInsertResult = await conn.query(
         `INSERT INTO payments (order_id, razorpay_payment_id, razorpay_signature, payment_status, created_at)
          VALUES ($1, $2, $3, $4, NOW()) RETURNING *`,
         [orderId, razorpayPaymentId, razorpaySignature, 'SUCCESS']
       );
+
+      const paymentResult = paymentInsertResult.rows[0];
 
       // 5. Update order status to PAID
       await conn.query('UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2', ['PAID', orderId]);
@@ -217,10 +223,12 @@ class PaymentService {
     const razorpayOrderId = paymentData.order_id;
     const razorpayPaymentId = paymentData.id;
 
-    const [orderRows] = await conn.query(
+    const orderQueryResult = await conn.query(
       'SELECT id FROM orders WHERE razorpay_order_id = $1',
       [razorpayOrderId]
     );
+
+    const orderRows = orderQueryResult.rows;
 
     if (orderRows.length > 0) {
       await conn.query(
@@ -237,10 +245,12 @@ class PaymentService {
     const paymentData = payload.payload.payment.entity;
     const razorpayOrderId = paymentData.order_id;
 
-    const [orderRows] = await conn.query(
+    const orderQueryResult = await conn.query(
       'SELECT id FROM orders WHERE razorpay_order_id = $1',
       [razorpayOrderId]
     );
+
+    const orderRows = orderQueryResult.rows;
 
     if (orderRows.length > 0) {
       await conn.query(
@@ -267,10 +277,12 @@ class PaymentService {
    * Get Order Details
    */
   async getOrderDetails(orderId) {
-    const [rows] = await db.query(
+    const queryResult = await db.query(
       'SELECT * FROM orders WHERE id = $1',
       [orderId]
     );
+
+    const rows = queryResult.rows;
 
     if (!rows || rows.length === 0) {
       throw new Error('Order not found');
@@ -283,10 +295,12 @@ class PaymentService {
    * Get Payment Details
    */
   async getPaymentDetails(paymentId) {
-    const [rows] = await db.query(
+    const queryResult = await db.query(
       'SELECT * FROM payments WHERE id = $1',
       [paymentId]
     );
+
+    const rows = queryResult.rows;
 
     if (!rows || rows.length === 0) {
       throw new Error('Payment not found');
