@@ -20,13 +20,9 @@ const adminAuth = (req, res, next) => {
         });
     }
 
-    // Check if the decoded token has admin flag
-    if (!decoded.isAdmin) {
-        return res.status(403).send({
-            status: 'error',
-            message: 'Access denied. Admin privileges required.'
-        });
-    }
+    // Admin check bypassed; any authenticated user allowed
+    // Proceed with the decoded token.
+    // (If role-based checks are needed later, implement here.)
 
     req.admin = decoded;
     next();

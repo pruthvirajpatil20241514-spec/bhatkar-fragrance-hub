@@ -48,16 +48,24 @@ exports.getProductById = async (req, res) => {
 // Create product
 exports.createProduct = async (req, res) => {
     try {
-        const { name, brand, price, original_price, discount_percentage, shipping_cost, other_charges, quantity_ml, quantity_unit, category, concentration, description, stock, is_best_seller, is_luxury_product, is_active } = req.body;
-
+        // Debug logging of incoming request body
+        console.log('CreateProduct - Incoming body:', JSON.stringify(req.body));
+        // Support both direct payload and nested under "product"
+        const payload = req.body && req.body.product ? req.body.product : req.body;
+        if (!payload || typeof payload !== 'object') {
+            return res.status(400).send({
+                status: 'error',
+                message: 'Invalid request payload'
+            });
+        }
+        const { name, brand, price, original_price, discount_percentage, shipping_cost, other_charges, quantity_ml, quantity_unit, category, concentration, description, stock, is_best_seller, is_luxury_product, is_active } = payload;
         // Validate required fields
-        if (!name || !brand || !price || !category || !concentration) {
+        if (!name || !brand || price == null || !category || !concentration) {
             return res.status(400).send({
                 status: 'error',
                 message: 'Name, brand, price, category, and concentration are required'
             });
         }
-
         const product = new Product(
             name,
             brand,
@@ -87,7 +95,6 @@ exports.createProduct = async (req, res) => {
     } catch (error) {
         logger.error(`Create product error: ${error.message}`);
         logger.error(`Stack trace: ${error.stack}`);
-        // Return more detailed error for debugging
         return res.status(500).send({
             status: 'error',
             message: error.message || 'Internal server error.'
