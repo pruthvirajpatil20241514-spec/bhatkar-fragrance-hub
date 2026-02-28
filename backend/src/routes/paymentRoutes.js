@@ -18,7 +18,6 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
-const optionalAuth = require('../middlewares/optionalAuth');
 const { auth } = require('../middlewares/auth');
 const { adminAuth } = require('../middlewares/adminAuth');
 const { captureRawBody, attachRawBody } = require('../middlewares/webhookMiddleware');

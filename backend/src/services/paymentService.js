@@ -26,7 +26,13 @@ class PaymentService {
       // but keeping for consistency with original logic.
       await conn.query('BEGIN');
 
-      // 1. Fetch product price from database (NEVER from frontend)
+      // 1. Verify user exists (PostgreSQL foreign key dependency)
+      const userCheck = await conn.query('SELECT id FROM users WHERE id = $1', [userId]);
+      if (!userCheck.rows || userCheck.rows.length === 0) {
+        throw new Error(`User with ID ${userId} not found in database records.`);
+      }
+
+      // 2. Fetch product price from database (NEVER from frontend)
       const queryResult = await conn.query(
         'SELECT id, name, price FROM products WHERE id = $1 AND is_active = true',
         [productId]
@@ -47,7 +53,7 @@ class PaymentService {
         throw new Error('Invalid order amount');
       }
 
-      // 2. Create Razorpay order (amount in paise)
+      // 3. Create Razorpay order (amount in paise)
       const razorpayOrder = await razorpay.orders.create({
         amount: Math.round(totalAmount * 100), // Convert to paise
         currency: 'INR',
@@ -60,7 +66,7 @@ class PaymentService {
         }, contact ? { contact } : {})
       });
 
-      // 3. Save order in database
+      // 4. Save order in database
       // Using RETURNING * to get the SERIAL id
       const orderInsertResult = await conn.query(
         `INSERT INTO orders (user_id, product_id, quantity, total_amount, razorpay_order_id, status, created_at)
