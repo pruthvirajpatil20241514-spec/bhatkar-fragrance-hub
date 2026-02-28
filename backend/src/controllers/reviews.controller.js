@@ -1,6 +1,6 @@
 const { asyncHandler } = require('../middlewares/asyncHandler');
 const reviewsQueries = require('../database/reviews.queries');
-const logger = require('../utils/logger');
+const { logger } = require('../utils/logger');
 
 // Get all reviews for a product
 exports.getProductReviews = asyncHandler(async (req, res) => {
