@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 require('dotenv').config();
-const pool = require('../../config/db.pool');
+const pool = require('../../config/db');
 
 async function columnExists(table, column) {
-  const [rows] = await pool.query(
-    'SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+  const rows_result = await pool.query(
+    'SELECT COUNT(*); const rows = rows_result.rows || rows_result AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
     [table, column]
   );
   return rows[0] && rows[0].cnt > 0;

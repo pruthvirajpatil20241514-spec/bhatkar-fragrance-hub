@@ -35,12 +35,13 @@ const auth = async (req, res, next) => {
         // SUPABASE UUID -> LOCAL INTEGER ID MAPPING
         // ----------------------------------------
         // Check if user exists in public.users by email
-        const [rows] = await db.query(
+        const userQuery = await db.query(
             'SELECT id FROM users WHERE email = $1',
             [decoded.email]
         );
 
         let localUserId;
+        const rows = userQuery.rows;
 
         if (rows && rows.length > 0) {
             // User found, use their local integer ID
@@ -53,17 +54,24 @@ const auth = async (req, res, next) => {
             const lastName = decoded.user_metadata?.lastname || decoded.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '';
 
             logger.info(`Syncing new user to local DB: ${decoded.email}`);
-            const [result] = await db.query(
+            const insertResult = await db.query(
                 'INSERT INTO users (firstname, lastname, email, password, created_on) VALUES ($1, $2, $3, $4, NOW()) RETURNING id',
                 [firstName, lastName, decoded.email, 'supabase_auth_managed']
             );
 
-            if (result && result.id) {
-                localUserId = result.id;
+            if (insertResult.rows && insertResult.rows.length > 0) {
+                localUserId = insertResult.rows[0].id;
                 logger.info(`New user created in local DB: ${decoded.email} -> ID: ${localUserId}`);
             } else {
                 throw new Error('Failed to create local user entry');
             }
+        }
+
+        if (!localUserId) {
+            return res.status(401).json({
+                success: false,
+                error: 'Authentication failed: User account missing'
+            });
         }
 
         // Attach local integer ID to request object

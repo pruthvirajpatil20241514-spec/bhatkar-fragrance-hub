@@ -60,10 +60,63 @@ exports.addProductImages = async (req, res) => {
         });
       }
 
+      let finalImageUrl = img.imageUrl;
+
+      // 1. Validation check for temp images
+      if (finalImageUrl.includes("temp")) {
+        // Here we do the "move the uploaded file into permanent storage bucket 'products'"
+        const railway = require('../config/railwayStorage.config');
+        try {
+          // Extract the object key from the temp URL
+          let tempKey = finalImageUrl;
+          if (tempKey.includes('http')) {
+            const urlParts = tempKey.split('/');
+            const bucketIdx = urlParts.findIndex(p => p === (process.env.S3_BUCKET || 'bhatkar-images'));
+            if (bucketIdx >= 0) {
+              tempKey = urlParts.slice(bucketIdx + 1).join('/');
+            } else if (tempKey.includes('products/')) {
+              tempKey = 'products/' + tempKey.split('products/')[1];
+            }
+          }
+
+          if (tempKey.includes("temp")) {
+            // Generate a permanent key without "temp"
+            const permanentKey = tempKey.replace(/-temp-/g, '-final-').replace(/temp-/g, 'final-');
+
+            // Move it in S3
+            const { CopyObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+            const bucket = process.env.S3_BUCKET || 'bhatkar-images';
+
+            await railway.s3Client.send(new CopyObjectCommand({
+              Bucket: bucket,
+              CopySource: `${bucket}/${tempKey}`,
+              Key: permanentKey,
+            }));
+
+            // Generate permanent PUBLIC URL
+            const endpoint = process.env.S3_ENDPOINT || 'https://t3.storageapi.dev';
+            finalImageUrl = `${endpoint}/${bucket}/${permanentKey}`;
+
+            await railway.s3Client.send(new DeleteObjectCommand({
+              Bucket: bucket,
+              Key: tempKey,
+            }));
+          }
+        } catch (copyErr) {
+          logger.error(`Failed to move temp image to permanent storage: ${copyErr.message}`);
+          throw new Error("Temporary image cannot be saved: " + copyErr.message);
+        }
+      } else if (!finalImageUrl.includes('http')) {
+        // Convert S3 key to public URL if it isn't temp but also isn't a full URL
+        const endpoint = process.env.S3_ENDPOINT || 'https://t3.storageapi.dev';
+        const bucket = process.env.S3_BUCKET || 'bhatkar-images';
+        finalImageUrl = `${endpoint}/${bucket}/${finalImageUrl}`;
+      }
+
       const newImage = new ProductImage(
         pid,
-        img.imageUrl,
-        img.imageFormat || ProductImage.extractImageFormat(img.imageUrl),
+        finalImageUrl,
+        img.imageFormat || ProductImage.extractImageFormat(finalImageUrl),
         img.altText || `Product Image ${i + 1}`,
         img.imageOrder || i + 1,
         img.isThumbnail || (i === 0) // First image as thumbnail by default
@@ -285,8 +338,60 @@ exports.updateProductImage = async (req, res) => {
       });
     }
 
+    let finalImageUrl = imageUrl;
+
+    // Validation check for temp images
+    if (finalImageUrl.includes("temp")) {
+      const railway = require('../config/railwayStorage.config');
+      try {
+        // Extract the object key from the temp URL
+        let tempKey = finalImageUrl;
+        if (tempKey.includes('http')) {
+          const urlParts = tempKey.split('/');
+          const bucketIdx = urlParts.findIndex(p => p === (process.env.S3_BUCKET || 'bhatkar-images'));
+          if (bucketIdx >= 0) {
+            tempKey = urlParts.slice(bucketIdx + 1).join('/');
+          } else if (tempKey.includes('products/')) {
+            tempKey = 'products/' + tempKey.split('products/')[1];
+          }
+        }
+
+        if (tempKey.includes("temp")) {
+          // Generate a permanent key without "temp"
+          const permanentKey = tempKey.replace(/-temp-/g, '-final-').replace(/temp-/g, 'final-');
+
+          // Move it in S3
+          const { CopyObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+          const bucket = process.env.S3_BUCKET || 'bhatkar-images';
+
+          await railway.s3Client.send(new CopyObjectCommand({
+            Bucket: bucket,
+            CopySource: `${bucket}/${tempKey}`,
+            Key: permanentKey,
+          }));
+
+          await railway.s3Client.send(new DeleteObjectCommand({
+            Bucket: bucket,
+            Key: tempKey,
+          }));
+
+          // Generate permanent PUBLIC URL
+          const endpoint = process.env.S3_ENDPOINT || 'https://t3.storageapi.dev';
+          finalImageUrl = `${endpoint}/${bucket}/${permanentKey}`;
+        }
+      } catch (copyErr) {
+        logger.error(`Failed to move temp image to permanent storage: ${copyErr.message}`);
+        throw new Error("Temporary image cannot be saved: " + copyErr.message);
+      }
+    } else if (!finalImageUrl.includes('http')) {
+      // Convert S3 key to public URL if it isn't temp but also isn't a full URL
+      const endpoint = process.env.S3_ENDPOINT || 'https://t3.storageapi.dev';
+      const bucket = process.env.S3_BUCKET || 'bhatkar-images';
+      finalImageUrl = `${endpoint}/${bucket}/${finalImageUrl}`;
+    }
+
     const updated = await ProductImage.updateImage(imageId, productId, {
-      imageUrl,
+      imageUrl: finalImageUrl,
       altText: altText || `Product Image`,
       imageOrder: imageOrder || 0
     });

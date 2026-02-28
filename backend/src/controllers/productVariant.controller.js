@@ -14,7 +14,8 @@ exports.getProductVariants = async (req, res) => {
   }
 
   try {
-    const [rows] = await db.query(variantQueries.getVariantsByProductId, [productId]);
+    const result = await db.query(variantQueries.getProductVariants, [productId]);
+    const rows = result.rows;
     return res.status(200).json({
       status: 'success',
       data: rows || [],
@@ -41,7 +42,8 @@ exports.getVariant = async (req, res) => {
   }
 
   try {
-    const [rows] = await db.query(variantQueries.getVariantById, [variantId]);
+    const result = await db.query(variantQueries.getVariantById, [variantId]);
+    const rows = result.rows;
     if (!rows || rows.length === 0) {
       return res.status(404).json({
         status: 'error',
@@ -79,10 +81,10 @@ exports.createVariant = async (req, res) => {
   const isActive = true;
 
   try {
-    const [result] = await db.query(
-      variantQueries.createVariant,
+    const queryResult = await db.query(variantQueries.createVariant,
       [productId, variant_name, variant_value, unit, price, stock, isActive]
     );
+    const result = queryResult.rows[0];
 
     return res.status(201).json({
       status: 'success',
@@ -130,10 +132,10 @@ exports.updateVariant = async (req, res) => {
   const active = is_active !== undefined ? !!is_active : true;
 
   try {
-    const [result] = await db.query(
-      variantQueries.updateVariant,
+    const updateResult = await db.query(variantQueries.updateVariant,
       [variant_name, variant_value, unit, price, stock, active, variantId]
     );
+    const result = updateResult;
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
@@ -168,7 +170,8 @@ exports.deleteVariant = async (req, res) => {
   }
 
   try {
-    const [result] = await db.query(variantQueries.deleteVariant, [variantId]);
+    const deleteResult = await db.query(variantQueries.deleteVariant, [variantId]);
+    const result = deleteResult;
 
     if (result.affectedRows === 0) {
       return res.status(404).json({

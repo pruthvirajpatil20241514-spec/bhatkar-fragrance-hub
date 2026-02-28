@@ -43,14 +43,17 @@ router.get('/health', async (req, res) => {
   try {
     const db = require('../config/db');
 
-    const [ordersRow] = await db.execute(
+    const ordersResult = await db.execute(
       `SELECT COUNT(*) AS cnt FROM information_schema.columns
        WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'updated_at'`
     );
-    const [paymentsRow] = await db.execute(
+    const paymentsResult = await db.execute(
       `SELECT COUNT(*) AS cnt FROM information_schema.columns
        WHERE table_schema = 'public' AND table_name = 'payments' AND column_name = 'created_at'`
     );
+
+    const ordersRow = ordersResult.rows;
+    const paymentsRow = paymentsResult.rows;
 
     const ordersUpdatedAt = !!(ordersRow && ordersRow.length > 0 && parseInt(ordersRow[0].cnt) > 0);
     const paymentsCreatedAt = !!(paymentsRow && paymentsRow.length > 0 && parseInt(paymentsRow[0].cnt) > 0);

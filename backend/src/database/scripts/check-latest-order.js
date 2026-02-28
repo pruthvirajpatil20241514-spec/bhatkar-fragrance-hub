@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 require('dotenv').config();
-const db = require('../../config/db.pool');
+const db = require('../../config/db');
 
 (async function() {
   try {
-    const [rows] = await db.query('SELECT id, user_id, product_id, quantity, total_amount, razorpay_order_id, status, created_at FROM orders ORDER BY id DESC LIMIT 5');
+    const  = ; const  = .rows || ;
     console.log('Latest orders:');
     console.log(JSON.stringify(rows, null, 2));
   } catch (err) {

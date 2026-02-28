@@ -3,7 +3,7 @@ const path = require('path');
 // Load backend .env so config modules can read DB_* env vars
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
-const db = require('../../config/db.pool');
+const db = require('../../config/db');
 const { logger } = require('../../utils/logger');
 
 // Basic validation
@@ -16,9 +16,9 @@ if (!process.env.DB_HOST || !process.env.DB_NAME) {
 async function ensurePaymentsColumns() {
   const conn = await db.getConnection();
   try {
-    const [rows] = await conn.execute(
+    const rows_result = await conn.execute(
       `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments'`
+       WHERE TABLE_SCHEMA = DATABASE(); const rows = rows_result.rows || rows_result AND TABLE_NAME = 'payments'`
     );
 
     const existing = rows.map(r => r.COLUMN_NAME.toLowerCase());

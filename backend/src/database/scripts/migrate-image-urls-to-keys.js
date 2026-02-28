@@ -7,7 +7,7 @@
  * Run locally (from backend folder):
  *   node src/database/scripts/migrate-image-urls-to-keys.js
  */
-const db = require('../../config/db.pool');
+const db = require('../../config/db');
 const imageURLService = require('../../services/imageURLService');
 const { logger } = require('../../utils/logger');
 
@@ -16,7 +16,7 @@ async function run() {
   try {
     console.log('🔄 Starting image URL -> object key migration');
 
-    const [rows] = await conn.execute('SELECT id, image_url FROM product_images');
+    const rows_result = await conn.execute('SELECT id, image_url FROM product_images'); const rows = rows_result.rows || rows_result;
     console.log(`📦 Found ${rows.length} image rows`);
 
     let updated = 0;

@@ -30,7 +30,10 @@ async function runStartupMigrations(db, loggerUtil = logger) {
     await addImageFormatColumn(db, loggerUtil);
     await addIsThumbnailColumn(db, loggerUtil);
 
-    // Migration 4: Create indexes
+    // Migration 4: Add users table columns
+    await addUsersTableColumns(db, loggerUtil);
+
+    // Migration 5: Create indexes
     await createIndexes(db, loggerUtil);
 
     loggerUtil.info('✅ All startup migrations completed successfully');
@@ -171,6 +174,38 @@ async function addIsThumbnailColumn(db, loggerUtil) {
 }
 
 /**
+ * Add missing columns to users table
+ */
+async function addUsersTableColumns(db, loggerUtil) {
+  const columnsToAdd = [
+    { name: 'name', type: 'VARCHAR(100)' },
+    { name: 'full_name', type: 'VARCHAR(100)' },
+    { name: 'role', type: "VARCHAR(20) DEFAULT 'customer'" },
+    { name: 'is_verified', type: 'BOOLEAN DEFAULT FALSE' }
+  ];
+
+  for (const col of columnsToAdd) {
+    try {
+      const { rows: columns } = await db.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' 
+        AND table_schema = 'public'
+        AND column_name = $1
+      `, [col.name]);
+
+      if (columns.length === 0) {
+        loggerUtil.info(`  Adding ${col.name} column to users table...`);
+        await db.query(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+        loggerUtil.info(`  ✅ Added ${col.name} column`);
+      }
+    } catch (err) {
+      loggerUtil.warn(`  ⚠️ Could not add column ${col.name} to users table:`, err.message);
+    }
+  }
+}
+
+/**
  * Create indexes on products table for performance
  */
 async function createIndexes(db, loggerUtil) {
@@ -249,5 +284,6 @@ module.exports = {
   addIsBestSellerColumn,
   addImageFormatColumn,
   addIsThumbnailColumn,
+  addUsersTableColumns,
   createIndexes
 };

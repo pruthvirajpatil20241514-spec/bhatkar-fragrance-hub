@@ -2,7 +2,7 @@
  * Safe migration: add `is_active` column to `products` if it doesn't exist
  * Run locally: node src/database/scripts/ensure-is_active-column.js (from backend folder)
  */
-const db = require('../../config/db.pool');
+const db = require('../../config/db');
 const { logger } = require('../../utils/logger');
 
 async function run() {

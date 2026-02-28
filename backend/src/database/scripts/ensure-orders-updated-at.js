@@ -13,7 +13,7 @@ const path = require('path');
 // Load backend .env so DB_* env vars are available
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
-const db = require('../../config/db.pool');
+const db = require('../../config/db');
 const { logger } = require('../../utils/logger');
 
 async function main() {
@@ -22,8 +22,8 @@ async function main() {
     conn = await db.getConnection();
 
     // Check if column already exists
-    const [rows] = await conn.execute(
-      `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+    const rows_result = await conn.execute(
+      `SELECT COUNT(*); const rows = rows_result.rows || rows_result AS cnt FROM INFORMATION_SCHEMA.COLUMNS
        WHERE TABLE_SCHEMA = DATABASE()
          AND TABLE_NAME = 'orders'
          AND COLUMN_NAME = 'updated_at'`

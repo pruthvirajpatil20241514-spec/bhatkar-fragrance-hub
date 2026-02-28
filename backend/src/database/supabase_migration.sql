@@ -7,8 +7,12 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     firstname VARCHAR(50) NULL,
     lastname VARCHAR(50) NULL,
+    name VARCHAR(100) NULL, -- Fallback for queries expecting 'name'
+    full_name VARCHAR(100) NULL, -- Specifically for shop/reviews
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) DEFAULT 'customer', -- Role-based access
+    is_verified BOOLEAN DEFAULT FALSE,
     created_on TIMESTAMP NOT NULL DEFAULT NOW()
 );
 

@@ -1,4 +1,4 @@
-const db = require('../../config/db.config');
+const db = require('../../config/db');
 const { logger } = require('../../utils/logger');
 
 async function migrateMlPricing() {
@@ -12,7 +12,7 @@ async function migrateMlPricing() {
             AND COLUMN_NAME IN ('quantity_ml', 'quantity_unit')
         `;
         
-        const [existingColumns] = await db.query(checkColumnsQuery);
+        const  = ; const  = .rows || ;
         
         if (existingColumns.length === 2) {
             logger.info('✓ Columns quantity_ml and quantity_unit already exist. Skipping migration.');
