@@ -37,36 +37,48 @@ ORDER BY image_order ASC
 const getProductWithImages = `
 SELECT 
   p.*,
-  COALESCE((SELECT ROUND(AVG(rating), 2) FROM reviews WHERE product_id = p.id AND is_approved = true), 0) as avg_rating,
-  COALESCE((SELECT COUNT(*) FROM reviews WHERE product_id = p.id AND is_approved = true), 0)::INTEGER as total_reviews,
-  (
-    SELECT COALESCE(json_agg(pi_sub), '[]'::json)
-    FROM (
-      SELECT id, image_url, image_format, alt_text, image_order, is_thumbnail
-      FROM product_images
-      WHERE product_id = p.id
-      ORDER BY image_order ASC
-    ) pi_sub
+  COALESCE((SELECT AVG(rating) FROM reviews WHERE product_id = p.id AND is_approved = true), 0) as avg_rating,
+  (SELECT COUNT(*) FROM reviews WHERE product_id = p.id AND is_approved = true)::INTEGER as total_reviews,
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'id', pi.id,
+        'image_url', pi.image_url,
+        'image_format', pi.image_format,
+        'alt_text', pi.alt_text,
+        'image_order', pi.image_order,
+        'is_thumbnail', pi.is_thumbnail
+      ) ORDER BY pi.image_order ASC
+    ) FILTER (WHERE pi.id IS NOT NULL),
+    '[]'::json
   ) as images
 FROM products p
+LEFT JOIN product_images pi ON p.id = pi.product_id
 WHERE p.id = $1
+GROUP BY p.id
 `;
 
 const getAllProductsWithImages = `
 SELECT 
   p.*,
-  COALESCE((SELECT ROUND(AVG(rating), 2) FROM reviews WHERE product_id = p.id AND is_approved = true), 0) as avg_rating,
-  COALESCE((SELECT COUNT(*) FROM reviews WHERE product_id = p.id AND is_approved = true), 0)::INTEGER as total_reviews,
-  (
-    SELECT COALESCE(json_agg(pi_sub), '[]'::json)
-    FROM (
-      SELECT id, image_url, image_format, alt_text, image_order, is_thumbnail
-      FROM product_images
-      WHERE product_id = p.id
-      ORDER BY image_order ASC
-    ) pi_sub
+  COALESCE((SELECT AVG(rating) FROM reviews WHERE product_id = p.id AND is_approved = true), 0) as avg_rating,
+  (SELECT COUNT(*) FROM reviews WHERE product_id = p.id AND is_approved = true)::INTEGER as total_reviews,
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'id', pi.id,
+        'image_url', pi.image_url,
+        'image_format', pi.image_format,
+        'alt_text', pi.alt_text,
+        'image_order', pi.image_order,
+        'is_thumbnail', pi.is_thumbnail
+      ) ORDER BY pi.image_order ASC
+    ) FILTER (WHERE pi.id IS NOT NULL),
+    '[]'::json
   ) as images
 FROM products p
+LEFT JOIN product_images pi ON p.id = pi.product_id
+GROUP BY p.id
 ORDER BY p.created_on DESC
 `;
 

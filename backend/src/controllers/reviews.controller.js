@@ -54,14 +54,9 @@ exports.getAllProductReviews = asyncHandler(async (req, res) => {
 
 // Create a new review
 exports.createReview = asyncHandler(async (req, res) => {
-    const productIdFromUrl = req.params.productId;
-    const { product_id, productId, reviewer_name, rating, review_text, verified_purchase, is_approved, is_active } = req.body;
-    // Support both URL params and body
-    const productId_ = productIdFromUrl || product_id || productId;
-
     // Strict type parsing
-    const pid = Number(productId_);
-    const rtg = Number(rating);
+    const pid = Number(req.body.product_id || req.body.productId || req.params.productId);
+    const rtg = Number(req.body.rating);
 
     // DEBUG LOGS
     console.log(`[Review Debug] Types: pid=${typeof pid}(${pid}), rating=${typeof rtg}(${rtg}), reviewer=${reviewer_name}`);
@@ -82,12 +77,12 @@ exports.createReview = asyncHandler(async (req, res) => {
 
     const reviewData = {
         product_id: pid,
-        reviewer_name: String(reviewer_name),
+        reviewer_name: String(req.body.reviewer_name || ''),
         rating: rtg,
-        review_text: String(review_text),
-        verified_purchase: verified_purchase === true || verified_purchase === 'true' || verified_purchase === 1,
-        is_approved: is_approved !== undefined ? (is_approved === true || is_approved === 'true' || is_approved === 1) : true,
-        is_active: is_active !== undefined ? (is_active === true || is_active === 'true' || is_active === 1) : true
+        review_text: String(req.body.review_text || ''),
+        verified_purchase: Boolean(req.body.verified_purchase || req.body.is_verified),
+        is_approved: req.body.is_approved !== undefined ? Boolean(req.body.is_approved) : true,
+        is_active: req.body.is_active !== undefined ? Boolean(req.body.is_active) : true
     };
 
     const review = await reviewsQueries.createReview(reviewData);

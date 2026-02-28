@@ -51,14 +51,12 @@ export default function ProductDetail() {
   const totalPrice = variantPrice * quantity;
   const availableStock = selectedVariant?.stock ?? product?.stock ?? 0;
   const maxQuantity = Math.min(10, availableStock); // Max 10 or available stock, whichever is less
-  
+
   // Display images: use variant-specific if available, else product images
   // Ensure we always have strings, never objects
-  const displayImages = variantImages.length > 0 
+  const displayImages = variantImages.length > 0
     ? variantImages.map(img => typeof img === 'string' ? img : img.image_url)
-    : (Array.isArray(product?.images) 
-        ? product.images.filter((img): img is string => typeof img === 'string')
-        : []);
+    : (product?.images || []).filter((img: any): img is string => typeof img === 'string');
 
   useEffect(() => {
     if (localProduct) return; // nothing to fetch
@@ -73,9 +71,9 @@ export default function ProductDetail() {
         // Fetch product with images
         const productRes = await api.get(`/products/${id}/with-images`);
         const p = productRes.data?.data || productRes.data;
-        
+
         if (!mounted) return;
-        
+
         if (!p) {
           setRemoteError('Product not found');
           setLoadingRemote(false);
@@ -89,9 +87,7 @@ export default function ProductDetail() {
           description: p.description || p.short_description || '',
           price: p.price || 0,
           originalPrice: p.original_price || p.originalPrice,
-          images: Array.isArray(p.images)
-            ? p.images.map((img: any) => img.image_url || img.url || img)
-            : [],
+          images: (p.images || []).map((img: any) => img.image_url || img.url || img),
           category: p.category || 'unisex',
           fragranceType: p.fragranceType || p.fragrance_type || 'fresh',
           notes: p.notes || { top: [], middle: [], base: [] },
@@ -114,14 +110,14 @@ export default function ProductDetail() {
         try {
           const variantRes = await api.get(`/variants/product/${p.id}`);
           if (!mounted) return;
-          
+
           let variantData = variantRes?.data?.data || [];
-          
+
           // Filter out invalid variants and sort by value
           variantData = variantData.filter(v => v && v.id).sort((a, b) => a.variant_value - b.variant_value);
-          
+
           setVariants(variantData);
-          
+
           // Set first variant as selected
           if (variantData.length > 0) {
             setSelectedVariant(variantData[0]);
@@ -175,12 +171,12 @@ export default function ProductDetail() {
     }
 
     let mounted = true;
-    
+
     (async () => {
       try {
         const response = await api.get(`/variant-images/${selectedVariant.id}`);
         if (!mounted) return;
-        
+
         const images = response.data?.data || [];
         setVariantImages(images);
         setActiveImageIndex(0); // Reset to first image when variant changes
@@ -220,19 +216,19 @@ export default function ProductDetail() {
       toast.error("Please select a variant");
       return;
     }
-    
+
     // Validation: Check stock is available
     if (availableStock <= 0) {
       toast.error("This product is out of stock");
       return;
     }
-    
+
     // Validation: Check quantity is valid
     if (quantity <= 0) {
       toast.error("Please select a valid quantity");
       return;
     }
-    
+
     if (quantity > availableStock) {
       toast.error(`Only ${availableStock} item(s) available`);
       return;
@@ -450,7 +446,7 @@ export default function ProductDetail() {
                       )}
                     </div>
                   )}
-                  
+
                   {/* Selling Price */}
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-bold text-primary">
@@ -603,13 +599,12 @@ export default function ProductDetail() {
                   <span className="text-muted-foreground">
                     {availableStock > 0 ? (
                       <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          availableStock > 10 
-                            ? 'bg-green-100 text-green-800' 
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${availableStock > 10
+                            ? 'bg-green-100 text-green-800'
                             : availableStock > 3
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
                           <Check className="h-3 w-3 mr-1" />
                           {availableStock} available
                         </span>
