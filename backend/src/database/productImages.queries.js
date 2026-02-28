@@ -40,7 +40,17 @@ SELECT
   COALESCE(ROUND(AVG(r.rating), 2), 0)::NUMERIC as avg_rating,
   COUNT(DISTINCT r.id)::INTEGER as total_reviews,
   COALESCE(
-    (SELECT json_agg(pi.*) FILTER (WHERE pi.id IS NOT NULL) FROM product_images pi WHERE pi.product_id = p.id),
+    (
+      SELECT json_agg(
+        json_build_object(
+          'id', pi.id,
+          'image_url', pi.image_url,
+          'alt_text', pi.alt_text,
+          'image_order', pi.image_order,
+          'is_thumbnail', pi.is_thumbnail
+        ) ORDER BY pi.image_order ASC
+      ) FROM product_images pi WHERE pi.product_id = p.id
+    ),
     '[]'::json
   ) as images
 FROM products p
@@ -55,7 +65,17 @@ SELECT
   COALESCE(ROUND(AVG(r.rating), 2), 0)::NUMERIC as avg_rating,
   COUNT(DISTINCT r.id)::INTEGER as total_reviews,
   COALESCE(
-    (SELECT json_agg(pi.*) FILTER (WHERE pi.id IS NOT NULL) FROM product_images pi WHERE pi.product_id = p.id),
+    (
+      SELECT json_agg(
+        json_build_object(
+          'id', pi.id,
+          'image_url', pi.image_url,
+          'alt_text', pi.alt_text,
+          'image_order', pi.image_order,
+          'is_thumbnail', pi.is_thumbnail
+        ) ORDER BY pi.image_order ASC
+      ) FROM product_images pi WHERE pi.product_id = p.id
+    ),
     '[]'::json
   ) as images
 FROM products p

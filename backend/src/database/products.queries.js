@@ -63,6 +63,16 @@ RETURNING *
 
 const deleteProduct = `
 DELETE FROM products WHERE id = $1
+RETURNING *
+`;
+
+const getProductStats = `
+SELECT 
+    COUNT(*)::INTEGER as total_products,
+    COALESCE(SUM(CASE WHEN is_active = TRUE THEN 1 ELSE 0 END), 0)::INTEGER as active_products,
+    COALESCE(SUM(CASE WHEN stock <= 0 THEN 1 ELSE 0 END), 0)::INTEGER as out_of_stock,
+    COALESCE(SUM(CASE WHEN is_best_seller = TRUE THEN 1 ELSE 0 END), 0)::INTEGER as best_sellers
+FROM products
 `;
 
 module.exports = {
@@ -71,5 +81,6 @@ module.exports = {
     getAllProducts,
     getProductById,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    getProductStats
 };

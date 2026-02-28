@@ -1,6 +1,21 @@
 const Order = require('../models/order.model');
 const { logger } = require('../utils/logger');
 
+// Get current user's orders
+exports.getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    if (!userId) {
+      return res.status(401).send({ status: 'error', message: 'User not authenticated' });
+    }
+    const data = await Order.getByUserId(userId);
+    return res.status(200).send({ status: 'success', data: data });
+  } catch (error) {
+    logger.error(`Get my orders error: ${error.message}`);
+    return res.status(500).send({ status: 'error', message: 'Error retrieving your orders' });
+  }
+};
+
 // Get all orders
 exports.getAllOrders = async (req, res) => {
   try {

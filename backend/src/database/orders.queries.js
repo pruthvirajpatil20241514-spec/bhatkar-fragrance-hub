@@ -26,7 +26,12 @@ SELECT
     o.*, 
     u.email as customer_email, 
     CONCAT(u.firstname, ' ', u.lastname) as customer_name,
-    p.name as product_name
+    p.name as product_name,
+    COALESCE(
+      (SELECT json_agg(json_build_object('image_url', pi.image_url)) 
+       FROM product_images pi WHERE pi.product_id = o.product_id LIMIT 1),
+      '[]'::json
+    ) as product_images
 FROM orders o
 LEFT JOIN users u ON o.user_id = u.id
 LEFT JOIN products p ON o.product_id = p.id
@@ -38,11 +43,20 @@ SELECT
     o.*, 
     u.email as customer_email, 
     CONCAT(u.firstname, ' ', u.lastname) as customer_name,
-    p.name as product_name
+    p.name as product_name,
+    COALESCE(
+      (SELECT json_agg(json_build_object('image_url', pi.image_url)) 
+       FROM product_images pi WHERE pi.product_id = o.product_id LIMIT 1),
+      '[]'::json
+    ) as product_images
 FROM orders o
 LEFT JOIN users u ON o.user_id = u.id
 LEFT JOIN products p ON o.product_id = p.id
 WHERE o.id = $1
+`;
+
+const getOrderByRazorpayId = `
+SELECT * FROM orders WHERE razorpay_order_id = $1
 `;
 
 const createOrder = `
@@ -54,15 +68,27 @@ const updateOrderStatus = `
 UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *
 `;
 
-const getOrderByRazorpayId = `
-SELECT * FROM orders WHERE razorpay_order_id = $1
+const getOrdersByUserId = `
+SELECT 
+    o.*, 
+    p.name as product_name,
+    COALESCE(
+      (SELECT json_agg(json_build_object('image_url', pi.image_url)) 
+       FROM product_images pi WHERE pi.product_id = o.product_id LIMIT 1),
+      '[]'::json
+    ) as product_images
+FROM orders o
+LEFT JOIN products p ON o.product_id = p.id
+WHERE o.user_id = $1
+ORDER BY o.created_at DESC
 `;
 
 module.exports = {
-  createTableOrders,
-  getAllOrders,
-  getOrderById,
-  createOrder,
-  updateOrderStatus,
-  getOrderByRazorpayId
+    createTableOrders,
+    getAllOrders,
+    getOrderById,
+    getOrdersByUserId,
+    createOrder,
+    updateOrderStatus,
+    getOrderByRazorpayId
 };

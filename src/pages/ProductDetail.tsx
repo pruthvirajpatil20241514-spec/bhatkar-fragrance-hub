@@ -24,6 +24,7 @@ import { products } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice, cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { normalizeProductImages } from "@/lib/imageUtils";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -81,28 +82,24 @@ export default function ProductDetail() {
         }
 
         // Normalize backend product
-        const normalized: any = {
-          id: p.id,
-          name: p.name,
+        let normalized = {
+          ...p,
           description: p.description || p.short_description || '',
-          price: p.price || 0,
-          originalPrice: p.original_price || p.originalPrice,
-          images: (p.images || []).map((img: any) => img.image_url || img.url || img),
-          category: p.category || 'unisex',
-          fragranceType: p.fragranceType || p.fragrance_type || 'fresh',
           notes: p.notes || { top: [], middle: [], base: [] },
           sizes: p.sizes || [{ ml: p.quantity_ml || 100, price: p.price || 0 }],
           longevity: p.longevity || 'moderate',
           rating: p.rating || 4.5,
           reviewCount: p.reviewCount || p.review_count || 0,
           inStock: (p.stock ?? p.quantity ?? 0) > 0,
-          quantity_ml: p.quantity_ml,
-          quantity_unit: p.quantity_unit,
-          brand: p.brand,
-          stock: p.stock || 0,
-          is_best_seller: p.is_best_seller || false,
-          is_luxury_product: p.is_luxury_product || false,
         };
+
+        // Use standard normalization utility for images and consistent structure
+        normalized = normalizeProductImages(normalized);
+
+        // Ensure description is a string
+        if (typeof normalized.description !== 'string') {
+          normalized.description = '';
+        }
 
         setRemoteProduct(normalized);
 
@@ -600,10 +597,10 @@ export default function ProductDetail() {
                     {availableStock > 0 ? (
                       <div className="flex items-center gap-2">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${availableStock > 10
-                            ? 'bg-green-100 text-green-800'
-                            : availableStock > 3
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
+                          ? 'bg-green-100 text-green-800'
+                          : availableStock > 3
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
                           }`}>
                           <Check className="h-3 w-3 mr-1" />
                           {availableStock} available

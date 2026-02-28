@@ -126,17 +126,33 @@ export default function Shop() {
         console.log('🔄 Fetching from API: /products/with-images/all');
         const response = await api.get('/products/with-images/all');
         console.log('✅ API returned status:', response.status);
-        
+
         const rawProducts = response.data.data || [];
-        // Normalize image fields so components receive consistent shapes
-        const newProducts = rawProducts.map((p: any) => normalizeProductImages(p));
+
+        // Normalize products: Ensure images is always an array and price is a number
+        const newProducts = rawProducts.map((p: any) => {
+          // Normalize images using utility
+          const normalized = normalizeProductImages(p);
+
+          // Double defensive: if normalization failed to ensure array, force it
+          if (!normalized.images || !Array.isArray(normalized.images)) {
+            normalized.images = [];
+          }
+
+          return normalized;
+        });
+
         console.log('📦 Loaded', newProducts.length, 'products from database');
         if (newProducts.length > 0) {
-          console.log('First product:', { id: newProducts[0].id, name: newProducts[0].name, hasImages: !!newProducts[0].images });
+          console.log('Sample product:', {
+            id: newProducts[0].id,
+            name: newProducts[0].name,
+            imageCount: newProducts[0].images?.length
+          });
         }
-        
+
         const prevCount = prevProductCountRef.current;
-        
+
         if (newProducts.length !== prevCount) {
           if (prevCount === 0) {
             console.log('📝 Initial load:', newProducts.length, 'products');
@@ -147,14 +163,14 @@ export default function Shop() {
           }
           prevProductCountRef.current = newProducts.length;
         }
-        
-        console.log('🔄 Setting dbProducts state with', newProducts.length, 'items');
+
+        console.log('🔄 Setting dbProducts state');
         setDbProducts(newProducts);
         setLoading(false);
-        console.log('✅ dbProducts state updated, should render now');
       } catch (error: any) {
         console.error('❌ Fetch failed:', error.message, error);
         if (isMountedRef.current) setLoading(false);
+        toast.error('Failed to load products from database');
       }
     };
 
@@ -171,7 +187,7 @@ export default function Shop() {
   const filteredProducts = useMemo(() => {
     // Use database products if available, otherwise fall back to static products
     let sourceProducts = dbProducts && dbProducts.length > 0 ? dbProducts : products;
-    
+
     let result = [...sourceProducts];
 
     // Search filter
@@ -187,7 +203,7 @@ export default function Shop() {
 
     // Category filter
     if (selectedCategories.length > 0) {
-      result = result.filter((p) => 
+      result = result.filter((p) =>
         selectedCategories.includes(p.category.toLowerCase())
       );
     }
@@ -381,9 +397,9 @@ export default function Shop() {
             <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
               {collectionParam
                 ? collectionParam
-                    .split("-")
-                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                    .join(" ")
+                  .split("-")
+                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                  .join(" ")
                 : "All Fragrances"}
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -410,8 +426,8 @@ export default function Shop() {
 
             <div className="flex gap-3 items-center">
               {/* Refresh Button */}
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={handleRefresh}
                 disabled={isRefreshing}

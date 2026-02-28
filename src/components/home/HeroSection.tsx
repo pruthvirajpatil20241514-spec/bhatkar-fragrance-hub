@@ -3,6 +3,7 @@ import { ArrowRight, Sparkles, Flower2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useRef, useEffect } from "react";
+import luxuryHero from "@/assets/generated/luxury-hero.png";
 
 export function HeroSection() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -42,11 +43,12 @@ export function HeroSection() {
         preload="auto"
         className="absolute inset-0 w-full h-full object-cover z-0"
         style={{ filter: "brightness(0.9)" }}
+        poster={luxuryHero}
       >
         <source src="/videos/hero-bg.mp4" type="video/mp4" />
         <source src="/videos/hero-bg.webm" type="video/webm" />
-        {/* Fallback Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-charcoal/30" />
+        {/* Fallback Gradient Backdrop if no video or poster */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-muted to-background opacity-50" />
       </video>
 
       {/* Dark Overlay for Better Text Readability */}
@@ -63,7 +65,7 @@ export function HeroSection() {
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         className="absolute bottom-20 right-10 w-56 h-56 rounded-full bg-accent/8 blur-3xl z-2"
       />
-      
+
       {/* Decorative Circles */}
       <motion.div
         animate={{ rotate: 360 }}
@@ -111,19 +113,19 @@ export function HeroSection() {
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 1, delay: 0.2 }}
             className="text-center mb-8"
           >
-            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight leading-tight mb-4">
-              <span className="block text-foreground">Discover Your</span>
-              <span className="block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+            <h1 className="font-display text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-extrabold tracking-tighter leading-none mb-4">
+              <span className="block text-foreground drop-shadow-sm">Discover Your</span>
+              <span className="block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent italic pb-2">
                 Signature Scent
               </span>
             </h1>
           </motion.div>
 
           {/* Subheading */}
-          
+
 
           {/* CTA Buttons with Enhanced Styling */}
           <motion.div
@@ -132,9 +134,9 @@ export function HeroSection() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
-            <Button 
-              variant="hero" 
-              size="xl" 
+            <Button
+              variant="hero"
+              size="xl"
               asChild
               className="group bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/30 transition-all duration-300"
             >
@@ -143,9 +145,9 @@ export function HeroSection() {
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
-            <Button 
-              variant="hero" 
-              size="xl" 
+            <Button
+              variant="hero"
+              size="xl"
               asChild
               className="group bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:shadow-primary/30 transition-all duration-300"
             >
@@ -166,19 +168,22 @@ export function HeroSection() {
             className="grid grid-cols-3 gap-6 md:gap-12 pt-12 border-t border-primary/10"
           >
             {[
+              { icon: "🏺", value: "35+", label: "Years of Heritage" },
+              { icon: "✨", value: "25k+", label: "Happy Customers" },
+              { icon: "🌿", value: "100%", label: "Artisanal Purity" }
             ].map((stat, index) => (
-              <motion.div 
-                key={index} 
+              <motion.div
+                key={index}
                 className="text-center"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}
               >
                 <div className="text-3xl md:text-4xl mb-2">{stat.icon}</div>
-                <div className="font-display text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-2">
+                <div className="font-display text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-1">
                   {stat.value}
                 </div>
-                <div className="text-xs md:text-sm text-muted-foreground font-medium">{stat.label}</div>
+                <div className="text-[10px] md:text-xs text-muted-foreground font-bold uppercase tracking-widest">{stat.label}</div>
               </motion.div>
             ))}
           </motion.div>

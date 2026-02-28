@@ -1,96 +1,90 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, Package, Download, Eye } from "lucide-react";
+import { ArrowLeft, Package, Download, Eye, Loader2 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatPrice } from "@/lib/utils";
+import api from "@/lib/axios";
+import { toast } from "sonner";
+
+interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  image?: string;
+}
 
 interface Order {
   id: string;
   date: string;
   total: number;
-  status: "completed" | "pending" | "processing" | "shipped" | "cancelled";
-  items: {
-    id: string;
-    name: string;
-    quantity: number;
-    price: number;
-  }[];
-  shippingAddress: {
-    name: string;
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
+  status: string;
+  items: OrderItem[];
   trackingNumber?: string;
 }
 
-const MOCK_ORDERS: Order[] = [
-  {
-    id: "ORD-2024-001",
-    date: "2024-01-20",
-    total: 4999,
-    status: "completed",
-    items: [
-      {
-        id: "1",
-        name: "Royal Oud Noir",
-        quantity: 1,
-        price: 4999,
-      },
-    ],
-    shippingAddress: {
-      name: "John Doe",
-      address: "123 Main Street",
-      city: "Mumbai",
-      state: "Maharashtra",
-      zipCode: "400001",
-    },
-    trackingNumber: "TRK-2024-123456",
-  },
-  {
-    id: "ORD-2024-002",
-    date: "2024-01-15",
-    total: 7398,
-    status: "shipped",
-    items: [
-      {
-        id: "2",
-        name: "Velvet Rose Garden",
-        quantity: 2,
-        price: 3499,
-      },
-    ],
-    shippingAddress: {
-      name: "John Doe",
-      address: "123 Main Street",
-      city: "Mumbai",
-      state: "Maharashtra",
-      zipCode: "400001",
-    },
-    trackingNumber: "TRK-2024-789012",
-  },
-];
-
-const statusConfig = {
-  completed: { label: "Completed", color: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400" },
-  pending: { label: "Pending", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400" },
-  processing: { label: "Processing", color: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-400" },
-  shipped: { label: "Shipped", color: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-400" },
-  cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-400" },
+const statusConfig: Record<string, { label: string; color: string }> = {
+  PAID: { label: "Completed", color: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400" },
+  PENDING: { label: "Pending", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400" },
+  PROCESSING: { label: "Processing", color: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-400" },
+  SHIPPED: { label: "Shipped", color: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-400" },
+  CANCELLED: { label: "Cancelled", color: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-400" },
+  FAILED: { label: "Failed", color: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-400" },
 };
 
 export default function Orders() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/orders/my');
+        const rawOrders = response.data?.data || [];
+
+        // Map backend orders to frontend Order interface
+        const mappedOrders: Order[] = rawOrders.map((o: any) => ({
+          id: `ORD-${new Date(o.created_at).getFullYear()}-${String(o.id).padStart(3, '0')}`,
+          date: o.created_at,
+          total: Number(o.total_amount),
+          status: o.status,
+          items: [
+            {
+              id: String(o.product_id),
+              name: o.product_name || 'Product',
+              quantity: o.quantity || 1,
+              price: Number(o.total_amount) / (o.quantity || 1),
+              image: o.product_images && o.product_images[0]?.image_url
+            }
+          ],
+          trackingNumber: o.razorpay_order_id // Using RP order ID as tracking for now
+        }));
+
+        setOrders(mappedOrders);
+      } catch (error: any) {
+        console.error('❌ Failed to fetch orders:', error);
+        toast.error('Failed to load your orders');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [isAuthenticated]);
+
+  if (authLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-muted-foreground">Loading...</div>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </Layout>
     );
@@ -130,14 +124,19 @@ export default function Orders() {
         {/* Content */}
         <section className="py-12 md:py-16">
           <div className="container max-w-4xl">
-            {MOCK_ORDERS.length > 0 ? (
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Fetching your orders...</p>
+              </div>
+            ) : orders.length > 0 ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
                 className="space-y-4"
               >
-                {MOCK_ORDERS.map((order) => (
+                {orders.map((order) => (
                   <div
                     key={order.id}
                     className="bg-card border border-border rounded-lg p-6 md:p-8 shadow-soft hover:shadow-medium transition-shadow"
@@ -155,8 +154,8 @@ export default function Orders() {
                         </p>
                       </div>
                       <div className="flex items-center gap-3 mt-4 md:mt-0">
-                        <Badge className={statusConfig[order.status].color}>
-                          {statusConfig[order.status].label}
+                        <Badge className={(statusConfig[order.status] || statusConfig.PENDING).color}>
+                          {(statusConfig[order.status] || statusConfig.PENDING).label}
                         </Badge>
                         <p className="text-lg font-bold text-primary">
                           {formatPrice(order.total)}
@@ -168,63 +167,36 @@ export default function Orders() {
                     <div className="mb-6 pb-6 border-b border-border/50">
                       {order.items.map((item) => (
                         <div key={item.id} className="flex gap-4 mb-4 last:mb-0">
+                          {item.image && (
+                            <div className="h-20 w-20 rounded bg-secondary flex-shrink-0 overflow-hidden">
+                              <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                            </div>
+                          )}
                           <div className="flex-1">
                             <h4 className="font-semibold mb-1">{item.name}</h4>
                             <p className="text-sm text-muted-foreground mb-2">
                               Quantity: {item.quantity}
                             </p>
                             <p className="font-semibold text-primary">
-                              {formatPrice(item.price)}
+                              {formatPrice(item.price)} per unit
                             </p>
                           </div>
                         </div>
                       ))}
                     </div>
 
-                    {/* Order Info */}
-                    <div className="grid md:grid-cols-2 gap-6 mb-6">
-                      <div>
-                        <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide">
-                          Shipping Address
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          <span className="text-foreground font-semibold block">
-                            {order.shippingAddress.name}
-                          </span>
-                          {order.shippingAddress.address}
-                          <br />
-                          {order.shippingAddress.city}, {order.shippingAddress.state}{" "}
-                          {order.shippingAddress.zipCode}
-                        </p>
-                      </div>
-                      {order.trackingNumber && (
-                        <div>
-                          <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide">
-                            Tracking Number
-                          </h4>
-                          <p className="text-sm font-mono bg-muted p-3 rounded text-foreground">
-                            {order.trackingNumber}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border/50">
-                      <Button variant="outline" className="gap-2">
-                        <Eye className="h-4 w-4" />
-                        View Details
+                      <Button variant="outline" className="gap-2" asChild>
+                        <Link to={`/checkout?orderId=${order.id}`}>
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </Link>
                       </Button>
-                      <Button variant="outline" className="gap-2">
+                      <Button variant="outline" className="gap-2" disabled>
                         <Download className="h-4 w-4" />
                         Download Invoice
                       </Button>
-                      {order.status === "shipped" && (
-                        <Button variant="outline" className="gap-2">
-                          <Package className="h-4 w-4" />
-                          Track Package
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}

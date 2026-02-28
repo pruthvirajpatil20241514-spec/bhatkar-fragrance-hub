@@ -51,8 +51,8 @@ export function WhyUsSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
-            Why <span className="text-gradient-gold">Bhatkar & Co</span>?
+          <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-black mb-4 tracking-tighter">
+            Why <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent italic">Bhatkar & Co</span>?
           </h2>
           <p className="text-ivory/70 text-lg max-w-2xl mx-auto">
             For over three decades, we've been perfecting the art of perfumery,

@@ -61,17 +61,15 @@ export default function Cart() {
                   >
                     {/* Product Image */}
                     <div className="h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 rounded-md bg-muted">
-                      {item.product.images && item.product.images[0] && (
-                        <img
-                          src={getImageUrl(item.product.images[0])}
-                          alt={item.product.name}
-                          className="h-full w-full object-cover rounded-md"
-                          onError={(e) => {
-                            console.error(`❌ Cart image load failed for product ${item.product.id}`);
-                            (e.target as HTMLImageElement).src = '/placeholder.svg';
-                          }}
-                        />
-                      )}
+                      <img
+                        src={getImageUrl(item.product.images)}
+                        alt={item.product.name}
+                        className="h-full w-full object-cover rounded-md"
+                        onError={(e) => {
+                          console.error(`❌ Cart image load failed for product ${item.product.id}`);
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
                     </div>
 
                     {/* Product Details */}

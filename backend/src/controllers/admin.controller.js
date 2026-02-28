@@ -3,10 +3,40 @@ const { JWT_SECRET_KEY } = require('../utils/secrets');
 const { compare: comparePassword } = require('../utils/password');
 const { logger } = require('../utils/logger');
 const Product = require('../models/product.model');
+const Order = require('../models/order.model');
 
 // Fixed admin credentials
 const ADMIN_EMAIL = 'admin@bhatkar.com';
 const ADMIN_PASSWORD = 'admin123';
+
+/**
+ * Get Dashboard Stats
+ */
+exports.getDashboardStats = async (req, res) => {
+    try {
+        const productStats = await Product.getStats();
+        const orderStats = await Order.getStats();
+
+        return res.status(200).send({
+            status: 'success',
+            data: {
+                totalProducts: productStats.total_products,
+                activeProducts: productStats.active_products,
+                outOfStock: productStats.out_of_stock,
+                totalOrders: orderStats.total_orders,
+                paidOrders: orderStats.paid_orders,
+                pendingOrders: orderStats.pending_orders,
+                totalRevenue: orderStats.total_revenue
+            }
+        });
+    } catch (error) {
+        logger.error(`Get dashboard stats error: ${error.message}`);
+        return res.status(500).send({
+            status: 'error',
+            message: 'Internal server error while fetching dashboard stats.'
+        });
+    }
+};
 
 /**
  * Admin Login

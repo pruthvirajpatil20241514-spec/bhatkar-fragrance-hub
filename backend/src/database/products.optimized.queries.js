@@ -33,19 +33,20 @@ SELECT
   p.total_reviews,
   p.views_count,
   COALESCE(
-    json_agg(
-      json_build_object(
-        'id', pi.id,
-        'image_url', pi.image_url,
-        'alt', pi.alt_text,
-        'order', pi.image_order,
-        'thumb', pi.is_thumbnail
-      ) ORDER BY pi.image_order ASC
-    ) FILTER (WHERE pi.id IS NOT NULL),
+    (
+      SELECT json_agg(
+        json_build_object(
+          'id', pi2.id,
+          'image_url', pi2.image_url,
+          'alt_text', pi2.alt_text,
+          'image_order', pi2.image_order,
+          'is_thumbnail', pi2.is_thumbnail
+        ) ORDER BY pi2.image_order ASC
+      ) FROM product_images pi2 WHERE pi2.product_id = p.id AND pi2.image_order <= 4
+    ),
     '[]'::json
   ) as images
 FROM products p
-LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.image_order <= 4
 WHERE p.is_active = true
 GROUP BY p.id
 ORDER BY p.created_on DESC
@@ -72,8 +73,11 @@ SELECT
     (
       SELECT json_agg(
         json_build_object(
+          'id', pi2.id,
           'image_url', pi2.image_url,
-          'thumb', pi2.is_thumbnail
+          'alt_text', pi2.alt_text,
+          'image_order', pi2.image_order,
+          'is_thumbnail', pi2.is_thumbnail
         ) ORDER BY pi2.image_order ASC
       ) FROM product_images pi2 WHERE pi2.product_id = p.id LIMIT 1
     ),
@@ -114,19 +118,20 @@ SELECT
   p.total_reviews,
   p.views_count,
   COALESCE(
-    json_agg(
-      json_build_object(
-        'id', pi.id,
-        'image_url', pi.image_url,
-        'alt', pi.alt_text,
-        'order', pi.image_order,
-        'thumb', pi.is_thumbnail
-      ) ORDER BY pi.image_order ASC
-    ) FILTER (WHERE pi.id IS NOT NULL),
+    (
+      SELECT json_agg(
+        json_build_object(
+          'id', pi2.id,
+          'image_url', pi2.image_url,
+          'alt_text', pi2.alt_text,
+          'image_order', pi2.image_order,
+          'is_thumbnail', pi2.is_thumbnail
+        ) ORDER BY pi2.image_order ASC
+      ) FROM product_images pi2 WHERE pi2.product_id = p.id
+    ),
     '[]'::json
   ) as images
 FROM products p
-LEFT JOIN product_images pi ON p.id = pi.product_id
 WHERE p.id = $1 AND p.is_active = true
 GROUP BY p.id
 `;
@@ -152,8 +157,11 @@ SELECT
     (
       SELECT json_agg(
         json_build_object(
+          'id', pi2.id,
           'image_url', pi2.image_url,
-          'thumb', pi2.is_thumbnail
+          'alt_text', pi2.alt_text,
+          'image_order', pi2.image_order,
+          'is_thumbnail', pi2.is_thumbnail
         ) ORDER BY pi2.image_order ASC
       ) FROM product_images pi2 WHERE pi2.product_id = p.id LIMIT 1
     ),
@@ -192,8 +200,11 @@ SELECT
     (
       SELECT json_agg(
         json_build_object(
+          'id', pi2.id,
           'image_url', pi2.image_url,
-          'thumb', pi2.is_thumbnail
+          'alt_text', pi2.alt_text,
+          'image_order', pi2.image_order,
+          'is_thumbnail', pi2.is_thumbnail
         ) ORDER BY pi2.image_order ASC
       ) FROM product_images pi2 WHERE pi2.product_id = p.id LIMIT 1
     ),
@@ -234,8 +245,11 @@ SELECT
     (
       SELECT json_agg(
         json_build_object(
+          'id', pi2.id,
           'image_url', pi2.image_url,
-          'thumb', pi2.is_thumbnail
+          'alt_text', pi2.alt_text,
+          'image_order', pi2.image_order,
+          'is_thumbnail', pi2.is_thumbnail
         ) ORDER BY pi2.image_order ASC
       ) FROM product_images pi2 WHERE pi2.product_id = p.id LIMIT 1
     ),
@@ -273,8 +287,11 @@ SELECT
     (
       SELECT json_agg(
         json_build_object(
+          'id', pi2.id,
           'image_url', pi2.image_url,
-          'thumb', pi2.is_thumbnail
+          'alt_text', pi2.alt_text,
+          'image_order', pi2.image_order,
+          'is_thumbnail', pi2.is_thumbnail
         ) ORDER BY pi2.image_order ASC
       ) FROM product_images pi2 WHERE pi2.product_id = p.id LIMIT 1
     ),
@@ -370,8 +387,11 @@ SELECT
     (
       SELECT json_agg(
         json_build_object(
+          'id', pi2.id,
           'image_url', pi2.image_url,
-          'thumb', pi2.is_thumbnail
+          'alt_text', pi2.alt_text,
+          'image_order', pi2.image_order,
+          'is_thumbnail', pi2.is_thumbnail
         ) ORDER BY pi2.image_order ASC
       ) FROM product_images pi2 WHERE pi2.product_id = p.id LIMIT 1
     ),

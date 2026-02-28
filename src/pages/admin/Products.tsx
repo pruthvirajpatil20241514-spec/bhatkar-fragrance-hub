@@ -43,6 +43,11 @@ interface Product {
   is_best_seller?: boolean;
   is_luxury_product?: boolean;
   created_on: string;
+  original_price?: number;
+  discount_percentage?: number;
+  shipping_cost?: number;
+  other_charges?: number;
+  is_active?: boolean;
   images?: Array<{
     id: number;
     image_url: string;
@@ -165,18 +170,18 @@ export default function Products() {
         name: product.name,
         brand: product.brand,
         price: product.price.toString(),
-        original_price: (product as any).original_price ? (product as any).original_price.toString() : "",
-        discount_percentage: (product as any).discount_percentage ? (product as any).discount_percentage.toString() : "",
-        shipping_cost: (product as any).shipping_cost ? (product as any).shipping_cost.toString() : "0",
-        other_charges: (product as any).other_charges ? (product as any).other_charges.toString() : "0",
+        original_price: product.original_price ? product.original_price.toString() : "",
+        discount_percentage: product.discount_percentage ? product.discount_percentage.toString() : "0",
+        shipping_cost: product.shipping_cost ? product.shipping_cost.toString() : "0",
+        other_charges: product.other_charges ? product.other_charges.toString() : "0",
         quantity_ml: product.quantity_ml.toString(),
         quantity_unit: product.quantity_unit,
         category: product.category,
         concentration: product.concentration,
-        description: product.description,
+        description: product.description || "",
         stock: product.stock.toString(),
         is_best_seller: product.is_best_seller || false,
-        is_luxury_product: (product as any).is_luxury_product || false,
+        is_luxury_product: product.is_luxury_product || false,
       });
       // Load existing images and variants for product
       loadProductImages(product.id);
@@ -328,21 +333,21 @@ export default function Products() {
               if (img.imageUrl.startsWith('data:')) {
                 try {
                   console.log(`📤 Uploading local image ${index + 1} to Railway...`);
-                  
+
                   // Convert data URL to blob
                   const response = await fetch(img.imageUrl);
                   const blob = await response.blob();
-                  
+
                   // Upload to Railway
                   const form = new FormData();
                   form.append("images", blob, `product-image-${index + 1}.jpg`);
-                  
+
                   const uploadResponse = await api.post(`/images/upload/${productId}`, form, {
                     headers: {
                       "Content-Type": "multipart/form-data",
                     },
                   });
-                  
+
                   const uploadedImages = uploadResponse.data.data?.images || [];
                   if (uploadedImages.length > 0) {
                     finalUrl = uploadedImages[0].image_url;
@@ -475,7 +480,7 @@ export default function Products() {
 
   const handleAddVariant = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!editingId) {
       toast.error("Please save the product first before adding variants");
       return;
@@ -616,101 +621,96 @@ export default function Products() {
                   </TableRow>
                 ) : (
                   products.map((product) => {
-                    // Get thumbnail image for database products
                     const productImages = product.images || [];
                     const thumbnailImage = productImages.find((img: any) => img.is_thumbnail) || productImages[0];
-                    const apiBase = import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, '') : '';
-                    const imageUrlRaw = thumbnailImage?.image_url;
-                    const imageUrl = imageUrlRaw
-                      ? (imageUrlRaw.startsWith('http') ? imageUrlRaw : `${apiBase}${imageUrlRaw}`)
-                      : '/placeholder.svg';
-                    
+                    // Using consolidated helper for consistent image rendering
+                    const imageUrl = thumbnailImage?.image_url || '/placeholder.svg';
+
                     return (
-                    <TableRow key={product.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div className="w-12 h-16 rounded overflow-hidden bg-muted flex-shrink-0">
-                          <img 
-                            src={imageUrl} 
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                            onError={(e: any) => {
-                              e.target.src = '/placeholder.svg';
-                            }}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{product.brand}</TableCell>
-                      <TableCell>₹{product.price.toFixed(2)}</TableCell>
-                      <TableCell className="text-sm">
-                        {product.quantity_ml}{product.quantity_unit}
-                      </TableCell>
-                      <TableCell>
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                          {product.category}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary/10 text-secondary-foreground">
-                          {product.concentration}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-block px-3 py-1 rounded text-xs font-semibold ${
-                            product.stock > 10 ? 'bg-green-100 text-green-800' :
-                            product.stock > 3 ? 'bg-yellow-100 text-yellow-800' :
-                            product.stock > 0 ? 'bg-orange-100 text-orange-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {product.stock}
+                      <TableRow key={product.id} className="hover:bg-muted/50">
+                        <TableCell>
+                          <div className="w-12 h-16 rounded overflow-hidden bg-muted flex-shrink-0">
+                            <img
+                              src={imageUrl}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                              onError={(e: any) => {
+                                e.target.src = '/placeholder.svg';
+                              }}
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell>{product.brand}</TableCell>
+                        <TableCell>₹{product.price.toFixed(2)}</TableCell>
+                        <TableCell className="text-sm">
+                          {product.quantity_ml}{product.quantity_unit}
+                        </TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            {product.category}
                           </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {product.is_best_seller ? (
-                          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                            ⭐ Yes
+                        </TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary/10 text-secondary-foreground">
+                            {product.concentration}
                           </span>
-                        ) : (
-                          <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
-                            No
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/admin/products/${product.id}/images`)}
-                            className="gap-1"
-                          >
-                            <Images className="h-4 w-4" />
-                            Images
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenDialog(product)}
-                            className="gap-1"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(product.id)}
-                            className="gap-1"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-block px-3 py-1 rounded text-xs font-semibold ${product.stock > 10 ? 'bg-green-100 text-green-800' :
+                              product.stock > 3 ? 'bg-yellow-100 text-yellow-800' :
+                                product.stock > 0 ? 'bg-orange-100 text-orange-800' :
+                                  'bg-red-100 text-red-800'
+                              }`}>
+                              {product.stock}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {product.is_best_seller ? (
+                            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                              ⭐ Yes
+                            </span>
+                          ) : (
+                            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                              No
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/admin/products/${product.id}/images`)}
+                              className="gap-1"
+                            >
+                              <Images className="h-4 w-4" />
+                              Images
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenDialog(product)}
+                              className="gap-1"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(product.id)}
+                              className="gap-1"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
                   })
                 )}
               </TableBody>
@@ -731,272 +731,468 @@ export default function Products() {
 
           <div className="overflow-y-auto flex-1 px-4">
             <form id="productForm" onSubmit={handleSubmit} className="space-y-4 pr-4">
-            {/* Name */}
-            <div>
-              <label className="text-sm font-medium block mb-1">Product Name *</label>
-              <Input
-                placeholder="e.g., Eau de Parfum Rose"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Brand */}
-            <div>
-              <label className="text-sm font-medium block mb-1">Brand *</label>
-              <Input
-                placeholder="e.g., Guerlain"
-                value={formData.brand}
-                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Price */}
-            <div>
-              <label className="text-sm font-medium block mb-1">Price (₹) *</label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Pricing Details Section */}
-            <div className="border-t pt-3 mt-3">
-              <label className="text-xs font-semibold block mb-3 uppercase tracking-wide text-muted-foreground">
-                Pricing Details (Optional)
-              </label>
-              
-              {/* Original Price */}
-              <div className="mb-3">
-                <label className="text-sm font-medium block mb-1">Original Price (MRP)</label>
-                <Input
-                  type="number"
-                  placeholder="Original/list price"
-                  step="0.01"
-                  value={formData.original_price}
-                  onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Discount Percentage */}
-              <div className="mb-3">
-                <label className="text-sm font-medium block mb-1">Discount Percentage (%)</label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  value={formData.discount_percentage}
-                  onChange={(e) => setFormData({ ...formData, discount_percentage: e.target.value })}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Shipping Cost */}
-              <div className="mb-3">
-                <label className="text-sm font-medium block mb-1">Shipping Cost</label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  step="0.01"
-                  value={formData.shipping_cost}
-                  onChange={(e) => setFormData({ ...formData, shipping_cost: e.target.value })}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Other Charges */}
-              <div className="mb-3">
-                <label className="text-sm font-medium block mb-1">Other Charges</label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  step="0.01"
-                  value={formData.other_charges}
-                  onChange={(e) => setFormData({ ...formData, other_charges: e.target.value })}
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-
-            {/* Quantity */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
-                <label className="text-sm font-medium block mb-1">Quantity (ML)</label>
-                <Input
-                  type="number"
-                  placeholder="100"
-                  value={formData.quantity_ml}
-                  onChange={(e) => setFormData({ ...formData, quantity_ml: e.target.value })}
-                  disabled={isSubmitting}
-                />
-              </div>
+              {/* Name */}
               <div>
-                <label className="text-sm font-medium block mb-1">Unit</label>
-                <Select
-                  value={formData.quantity_unit}
-                  onValueChange={(value: any) => setFormData({ ...formData, quantity_unit: value })}
+                <label className="text-sm font-medium block mb-1">Product Name *</label>
+                <Input
+                  placeholder="e.g., Eau de Parfum Rose"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   disabled={isSubmitting}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ml">ML</SelectItem>
-                    <SelectItem value="g">G</SelectItem>
-                    <SelectItem value="oz">OZ</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
               </div>
-            </div>
 
-            {/* Category */}
-            <div>
-              <label className="text-sm font-medium block mb-1">Category *</label>
-              <Select
-                value={formData.category}
-                onValueChange={(value: any) => setFormData({ ...formData, category: value })}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Men">Men</SelectItem>
-                  <SelectItem value="Women">Women</SelectItem>
-                  <SelectItem value="Unisex">Unisex</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Brand */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Brand *</label>
+                <Input
+                  placeholder="e.g., Guerlain"
+                  value={formData.brand}
+                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                  disabled={isSubmitting}
+                />
+              </div>
 
-            {/* Concentration */}
-            <div>
-              <label className="text-sm font-medium block mb-1">Concentration *</label>
-              <Select
-                value={formData.concentration}
-                onValueChange={(value: any) => setFormData({ ...formData, concentration: value })}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select concentration" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="EDP">EDP (Eau de Parfum)</SelectItem>
-                  <SelectItem value="EDT">EDT (Eau de Toilette)</SelectItem>
-                  <SelectItem value="Parfum">Parfum</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Price */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Price (₹) *</label>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  step="0.01"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  disabled={isSubmitting}
+                />
+              </div>
 
-            {/* Stock */}
-            <div>
-              <label className="text-sm font-medium block mb-1">Stock</label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                disabled={isSubmitting}
-              />
-            </div>
+              {/* Pricing Details Section */}
+              <div className="border-t pt-3 mt-3">
+                <label className="text-xs font-semibold block mb-3 uppercase tracking-wide text-muted-foreground">
+                  Pricing Details (Optional)
+                </label>
 
-            {/* Description */}
-            <div>
-              <label className="text-sm font-medium block mb-1">Description</label>
-              <textarea
-                placeholder="Product description..."
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                disabled={isSubmitting}
-                className="w-full px-3 py-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                rows={4}
-              />
-            </div>
-
-            {/* Best Seller Flag */}
-            <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-              <input
-                type="checkbox"
-                id="is_best_seller"
-                checked={formData.is_best_seller}
-                onChange={(e) => setFormData({ ...formData, is_best_seller: e.target.checked })}
-                disabled={isSubmitting}
-                className="w-4 h-4 rounded cursor-pointer"
-              />
-              <label htmlFor="is_best_seller" className="text-sm font-medium cursor-pointer flex items-center gap-1">
-                ⭐ Best Seller
-              </label>
-            </div>
-
-            {/* Luxury Product Flag */}
-            <div className="flex items-center gap-2 p-2 bg-purple-50 border border-purple-200 rounded">
-              <input
-                type="checkbox"
-                id="is_luxury_product"
-                checked={formData.is_luxury_product}
-                onChange={(e) => setFormData({ ...formData, is_luxury_product: e.target.checked })}
-                disabled={isSubmitting}
-                className="w-4 h-4 rounded cursor-pointer"
-              />
-              <label htmlFor="is_luxury_product" className="text-sm font-medium cursor-pointer flex items-center gap-1">
-                💎 Luxury Product
-              </label>
-            </div>
-
-            {/* Product Images */}
-            <div className="border-t pt-3">
-              <div className="mb-2">
-                <label className="text-xs font-semibold block mb-2 uppercase tracking-wide text-muted-foreground">Images (Max 4)</label>
-                
-                {/* Image Upload Form */}
-                <div className="space-y-2 mb-3 p-2 bg-muted/50 rounded">
-                  <ImageUploadForm 
-                    onAdd={handleAddImage}
-                    disabled={isSubmitting || images.length >= 4}
-                    productId={editingId}
+                {/* Original Price */}
+                <div className="mb-3">
+                  <label className="text-sm font-medium block mb-1">Original Price (MRP)</label>
+                  <Input
+                    type="number"
+                    placeholder="Original/list price"
+                    step="0.01"
+                    value={formData.original_price}
+                    onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
+                    disabled={isSubmitting}
                   />
                 </div>
 
-                {/* Images List */}
-                {images.length > 0 && (
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {images.length}/{4} images added
-                    </p>
-                    {images.map((image, index) => (
+                {/* Discount Percentage */}
+                <div className="mb-3">
+                  <label className="text-sm font-medium block mb-1">Discount Percentage (%)</label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.discount_percentage}
+                    onChange={(e) => setFormData({ ...formData, discount_percentage: e.target.value })}
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* Shipping Cost */}
+                <div className="mb-3">
+                  <label className="text-sm font-medium block mb-1">Shipping Cost</label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    step="0.01"
+                    value={formData.shipping_cost}
+                    onChange={(e) => setFormData({ ...formData, shipping_cost: e.target.value })}
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* Other Charges */}
+                <div className="mb-3">
+                  <label className="text-sm font-medium block mb-1">Other Charges</label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    step="0.01"
+                    value={formData.other_charges}
+                    onChange={(e) => setFormData({ ...formData, other_charges: e.target.value })}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+
+              {/* Quantity */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="text-sm font-medium block mb-1">Quantity (ML)</label>
+                  <Input
+                    type="number"
+                    placeholder="100"
+                    value={formData.quantity_ml}
+                    onChange={(e) => setFormData({ ...formData, quantity_ml: e.target.value })}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1">Unit</label>
+                  <Select
+                    value={formData.quantity_unit}
+                    onValueChange={(value: any) => setFormData({ ...formData, quantity_unit: value })}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ml">ML</SelectItem>
+                      <SelectItem value="g">G</SelectItem>
+                      <SelectItem value="oz">OZ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Category *</label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value: any) => setFormData({ ...formData, category: value })}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Men">Men</SelectItem>
+                    <SelectItem value="Women">Women</SelectItem>
+                    <SelectItem value="Unisex">Unisex</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Concentration */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Concentration *</label>
+                <Select
+                  value={formData.concentration}
+                  onValueChange={(value: any) => setFormData({ ...formData, concentration: value })}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select concentration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EDP">EDP (Eau de Parfum)</SelectItem>
+                    <SelectItem value="EDT">EDT (Eau de Toilette)</SelectItem>
+                    <SelectItem value="Parfum">Parfum</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Stock */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Stock</label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Description</label>
+                <textarea
+                  placeholder="Product description..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  disabled={isSubmitting}
+                  className="w-full px-3 py-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  rows={4}
+                />
+              </div>
+
+              {/* Best Seller Flag */}
+              <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                <input
+                  type="checkbox"
+                  id="is_best_seller"
+                  checked={formData.is_best_seller}
+                  onChange={(e) => setFormData({ ...formData, is_best_seller: e.target.checked })}
+                  disabled={isSubmitting}
+                  className="w-4 h-4 rounded cursor-pointer"
+                />
+                <label htmlFor="is_best_seller" className="text-sm font-medium cursor-pointer flex items-center gap-1">
+                  ⭐ Best Seller
+                </label>
+              </div>
+
+              {/* Luxury Product Flag */}
+              <div className="flex items-center gap-2 p-2 bg-purple-50 border border-purple-200 rounded">
+                <input
+                  type="checkbox"
+                  id="is_luxury_product"
+                  checked={formData.is_luxury_product}
+                  onChange={(e) => setFormData({ ...formData, is_luxury_product: e.target.checked })}
+                  disabled={isSubmitting}
+                  className="w-4 h-4 rounded cursor-pointer"
+                />
+                <label htmlFor="is_luxury_product" className="text-sm font-medium cursor-pointer flex items-center gap-1">
+                  💎 Luxury Product
+                </label>
+              </div>
+
+              {/* Product Images */}
+              <div className="border-t pt-3">
+                <div className="mb-2">
+                  <label className="text-xs font-semibold block mb-2 uppercase tracking-wide text-muted-foreground">Images (Max 4)</label>
+
+                  {/* Image Upload Form */}
+                  <div className="space-y-2 mb-3 p-2 bg-muted/50 rounded">
+                    <ImageUploadForm
+                      onAdd={handleAddImage}
+                      disabled={isSubmitting || images.length >= 4}
+                      productId={editingId}
+                    />
+                  </div>
+
+                  {/* Images List */}
+                  {images.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {images.length}/{4} images added
+                      </p>
+                      {images.map((image, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-1 p-1 bg-muted rounded border border-input text-xs"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs truncate font-medium">{image.altText}</p>
+                            <p className="text-xs text-muted-foreground truncate">{image.imageUrl.substring(0, 40)}...</p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={image.isThumbnail ? "default" : "outline"}
+                            onClick={() => handleSetThumbnail(index)}
+                            disabled={isSubmitting}
+                            className="text-xs h-6 px-2"
+                          >
+                            {image.isThumbnail ? "✓" : "Thumb"}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleRemoveImage(index)}
+                            disabled={isSubmitting}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Product Variants Management - Only when editing */}
+              {editingId && (
+                <div className="border-t pt-3">
+                  <label className="text-xs font-semibold block mb-2 uppercase tracking-wide text-muted-foreground">
+                    Variants (ML / Size)
+                  </label>
+
+                  {/* Existing Variants List */}
+                  {variants.length > 0 && (
+                    <div className="space-y-1 mb-3">
+                      <p className="text-xs text-muted-foreground mb-2">{variants.length} variant(s)</p>
+                      {variants.map((variant) => (
+                        <div
+                          key={variant.id}
+                          className="flex items-center justify-between p-2 bg-muted rounded border border-input text-xs"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium">{variant.variant_name}</p>
+                            <p className="text-muted-foreground">
+                              ₹{variant.price} | Stock: {variant.stock}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedVariantForImages(variant.id);
+                                // open file picker
+                                if (fileInputRef.current) fileInputRef.current.click();
+                              }}
+                              className="h-6 px-2"
+                            >
+                              <Upload className="h-3 w-3" />
+                            </Button>
+
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteVariant(variant.id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Hidden file input for variant uploads */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        ref={fileInputRef}
+                        onChange={handleVariantFileChange}
+                        style={{ display: 'none' }}
+                      />
+
+                      {/* Selected files preview & upload controls */}
+                      {selectedVariantForImages !== null && (
+                        <div className="mt-2 p-2 border border-input rounded bg-muted/50 text-xs">
+                          <p className="mb-2 font-medium">Selected files for variant:</p>
+                          {variantImageFiles.length === 0 ? (
+                            <p className="text-muted-foreground">No files selected</p>
+                          ) : (
+                            <div className="space-y-1 mb-2">
+                              {variantImageFiles.map((f, i) => (
+                                <div key={i} className="flex items-center justify-between bg-white p-2 rounded">
+                                  <span className="truncate mr-2">{f.name}</span>
+                                  <span className="text-muted-foreground text-xs">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => {
+                              if (selectedVariantForImages) handleUploadVariantImages(selectedVariantForImages);
+                            }} disabled={isUploadingVariantImages}>
+                              {isUploadingVariantImages ? 'Uploading...' : 'Upload to Variant'}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => { setVariantImageFiles([]); setSelectedVariantForImages(null); }}>
+                              Clear
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Add New Variant Form */}
+                  <form onSubmit={handleAddVariant} className="space-y-2 p-2 bg-muted/30 rounded">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs font-medium block mb-1">Name</label>
+                        <Input
+                          type="text"
+                          placeholder="e.g., 100ml"
+                          value={newVariant.name}
+                          onChange={(e) => setNewVariant({ ...newVariant, name: e.target.value })}
+                          className="text-xs h-8"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium block mb-1">Value</label>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 100"
+                          value={newVariant.value}
+                          onChange={(e) => setNewVariant({ ...newVariant, value: e.target.value })}
+                          className="text-xs h-8"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs font-medium block mb-1">Price</label>
+                        <Input
+                          type="number"
+                          placeholder="₹"
+                          step="0.01"
+                          value={newVariant.price}
+                          onChange={(e) => setNewVariant({ ...newVariant, price: e.target.value })}
+                          className="text-xs h-8"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium block mb-1">Stock</label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={newVariant.stock}
+                          onChange={(e) => setNewVariant({ ...newVariant, stock: e.target.value })}
+                          className="text-xs h-8"
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      className="w-full text-xs h-8"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Variant
+                    </Button>
+                  </form>
+                </div>
+              )}
+
+              {/* Initial Reviews Section */}
+              <div className="border-t pt-3">
+                <label className="text-xs font-semibold block mb-2 uppercase tracking-wide text-muted-foreground">
+                  Initial Reviews (Minimum 2 Recommended)
+                </label>
+
+                {/* Existing Reviews List */}
+                {initialReviews.length > 0 && (
+                  <div className="space-y-1 mb-3">
+                    <p className="text-xs text-muted-foreground mb-2">{initialReviews.length} review(s)</p>
+                    {initialReviews.map((review, index) => (
                       <div
                         key={index}
-                        className="flex items-center gap-1 p-1 bg-muted rounded border border-input text-xs"
+                        className="flex items-start justify-between p-2 bg-muted rounded border border-input text-xs"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs truncate font-medium">{image.altText}</p>
-                          <p className="text-xs text-muted-foreground truncate">{image.imageUrl.substring(0, 40)}...</p>
+                          <p className="font-medium">{review.reviewer_name}</p>
+                          <div className="flex items-center gap-1 my-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-3 w-3 ${i < review.rating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                                  }`}
+                              />
+                            ))}
+                          </div>
+                          <p className="text-muted-foreground line-clamp-2">{review.review_text}</p>
                         </div>
                         <Button
                           type="button"
                           size="sm"
-                          variant={image.isThumbnail ? "default" : "outline"}
-                          onClick={() => handleSetThumbnail(index)}
-                          disabled={isSubmitting}
-                          className="text-xs h-6 px-2"
-                        >
-                          {image.isThumbnail ? "✓" : "Thumb"}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
                           variant="destructive"
-                          onClick={() => handleRemoveImage(index)}
-                          disabled={isSubmitting}
-                          className="h-6 w-6 p-0"
+                          onClick={() => handleRemoveReview(index)}
+                          className="h-6 w-6 p-0 flex-shrink-0 ml-2"
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -1004,283 +1200,85 @@ export default function Products() {
                     ))}
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Product Variants Management - Only when editing */}
-            {editingId && (
-              <div className="border-t pt-3">
-                <label className="text-xs font-semibold block mb-2 uppercase tracking-wide text-muted-foreground">
-                  Variants (ML / Size)
-                </label>
-
-                {/* Existing Variants List */}
-                {variants.length > 0 && (
-                  <div className="space-y-1 mb-3">
-                    <p className="text-xs text-muted-foreground mb-2">{variants.length} variant(s)</p>
-                    {variants.map((variant) => (
-                      <div
-                        key={variant.id}
-                        className="flex items-center justify-between p-2 bg-muted rounded border border-input text-xs"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium">{variant.variant_name}</p>
-                          <p className="text-muted-foreground">
-                            ₹{variant.price} | Stock: {variant.stock}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedVariantForImages(variant.id);
-                              // open file picker
-                              if (fileInputRef.current) fileInputRef.current.click();
-                            }}
-                            className="h-6 px-2"
-                          >
-                            <Upload className="h-3 w-3" />
-                          </Button>
-
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteVariant(variant.id)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Hidden file input for variant uploads */}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      ref={fileInputRef}
-                      onChange={handleVariantFileChange}
-                      style={{ display: 'none' }}
-                    />
-
-                    {/* Selected files preview & upload controls */}
-                    {selectedVariantForImages !== null && (
-                      <div className="mt-2 p-2 border border-input rounded bg-muted/50 text-xs">
-                        <p className="mb-2 font-medium">Selected files for variant:</p>
-                        {variantImageFiles.length === 0 ? (
-                          <p className="text-muted-foreground">No files selected</p>
-                        ) : (
-                          <div className="space-y-1 mb-2">
-                            {variantImageFiles.map((f, i) => (
-                              <div key={i} className="flex items-center justify-between bg-white p-2 rounded">
-                                <span className="truncate mr-2">{f.name}</span>
-                                <span className="text-muted-foreground text-xs">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => {
-                            if (selectedVariantForImages) handleUploadVariantImages(selectedVariantForImages);
-                          }} disabled={isUploadingVariantImages}>
-                            {isUploadingVariantImages ? 'Uploading...' : 'Upload to Variant'}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => { setVariantImageFiles([]); setSelectedVariantForImages(null); }}>
-                            Clear
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Add New Variant Form */}
-                <form onSubmit={handleAddVariant} className="space-y-2 p-2 bg-muted/30 rounded">
-                  <div className="grid grid-cols-2 gap-2">
+                {/* Add New Review Form */}
+                {initialReviews.length < 10 && (
+                  <div className="p-2 bg-muted/30 rounded space-y-2">
                     <div>
-                      <label className="text-xs font-medium block mb-1">Name</label>
+                      <label className="text-xs font-medium block mb-1">Reviewer Name</label>
                       <Input
                         type="text"
-                        placeholder="e.g., 100ml"
-                        value={newVariant.name}
-                        onChange={(e) => setNewVariant({ ...newVariant, name: e.target.value })}
+                        placeholder="e.g., John Doe"
+                        value={newReview.reviewer_name}
+                        onChange={(e) => setNewReview({ ...newReview, reviewer_name: e.target.value })}
                         className="text-xs h-8"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium block mb-1">Value</label>
-                      <Input
-                        type="number"
-                        placeholder="e.g., 100"
-                        value={newVariant.value}
-                        onChange={(e) => setNewVariant({ ...newVariant, value: e.target.value })}
-                        className="text-xs h-8"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs font-medium block mb-1">Price</label>
-                      <Input
-                        type="number"
-                        placeholder="₹"
-                        step="0.01"
-                        value={newVariant.price}
-                        onChange={(e) => setNewVariant({ ...newVariant, price: e.target.value })}
-                        className="text-xs h-8"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium block mb-1">Stock</label>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={newVariant.stock}
-                        onChange={(e) => setNewVariant({ ...newVariant, stock: e.target.value })}
-                        className="text-xs h-8"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    type="submit"
-                    size="sm"
-                    className="w-full text-xs h-8"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Variant
-                  </Button>
-                </form>
-              </div>
-            )}
-
-            {/* Initial Reviews Section */}
-            <div className="border-t pt-3">
-              <label className="text-xs font-semibold block mb-2 uppercase tracking-wide text-muted-foreground">
-                Initial Reviews (Minimum 2 Recommended)
-              </label>
-
-              {/* Existing Reviews List */}
-              {initialReviews.length > 0 && (
-                <div className="space-y-1 mb-3">
-                  <p className="text-xs text-muted-foreground mb-2">{initialReviews.length} review(s)</p>
-                  {initialReviews.map((review, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start justify-between p-2 bg-muted rounded border border-input text-xs"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium">{review.reviewer_name}</p>
-                        <div className="flex items-center gap-1 my-0.5">
+                      <label className="text-xs font-medium block mb-1">Rating (1-5 stars)</label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="5"
+                          value={newReview.rating}
+                          onChange={(e) => setNewReview({ ...newReview, rating: Math.min(5, Math.max(1, parseInt(e.target.value) || 1)) })}
+                          className="text-xs h-8 w-16"
+                        />
+                        <div className="flex gap-1">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`h-3 w-3 ${
-                                i < review.rating
-                                  ? "fill-yellow-400 text-yellow-400"
-                                  : "text-gray-300"
-                              }`}
+                              className={`h-4 w-4 cursor-pointer ${i < newReview.rating
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                                }`}
+                              onClick={() => setNewReview({ ...newReview, rating: i + 1 })}
                             />
                           ))}
                         </div>
-                        <p className="text-muted-foreground line-clamp-2">{review.review_text}</p>
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleRemoveReview(index)}
-                        className="h-6 w-6 p-0 flex-shrink-0 ml-2"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Add New Review Form */}
-              {initialReviews.length < 10 && (
-                <div className="p-2 bg-muted/30 rounded space-y-2">
-                  <div>
-                    <label className="text-xs font-medium block mb-1">Reviewer Name</label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., John Doe"
-                      value={newReview.reviewer_name}
-                      onChange={(e) => setNewReview({ ...newReview, reviewer_name: e.target.value })}
-                      className="text-xs h-8"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium block mb-1">Rating (1-5 stars)</label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min="1"
-                        max="5"
-                        value={newReview.rating}
-                        onChange={(e) => setNewReview({ ...newReview, rating: Math.min(5, Math.max(1, parseInt(e.target.value) || 1)) })}
-                        className="text-xs h-8 w-16"
+                    <div>
+                      <label className="text-xs font-medium block mb-1">Review Text</label>
+                      <textarea
+                        placeholder="Write the review..."
+                        value={newReview.review_text}
+                        onChange={(e) => setNewReview({ ...newReview, review_text: e.target.value })}
+                        className="w-full px-2 py-1 border border-input rounded text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                        rows={2}
                       />
-                      <div className="flex gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 cursor-pointer ${
-                              i < newReview.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                            }`}
-                            onClick={() => setNewReview({ ...newReview, rating: i + 1 })}
-                          />
-                        ))}
-                      </div>
                     </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full text-xs h-8"
+                      onClick={handleAddReview}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Review
+                    </Button>
                   </div>
-                  <div>
-                    <label className="text-xs font-medium block mb-1">Review Text</label>
-                    <textarea
-                      placeholder="Write the review..."
-                      value={newReview.review_text}
-                      onChange={(e) => setNewReview({ ...newReview, review_text: e.target.value })}
-                      className="w-full px-2 py-1 border border-input rounded text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-                      rows={2}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="w-full text-xs h-8"
-                    onClick={handleAddReview}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Review
-                  </Button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
             </form>
           </div>
 
           {/* Actions - Fixed at bottom */}
           <div className="flex gap-2 justify-end pt-4 border-t shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseDialog}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button form="productForm" type="submit" disabled={isSubmitting} className="gap-2">
-                {isSubmitting && <Loader className="h-4 w-4 animate-spin" />}
-                {editingId ? "Update Product" : "Add Product"}
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseDialog}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button form="productForm" type="submit" disabled={isSubmitting} className="gap-2">
+              {isSubmitting && <Loader className="h-4 w-4 animate-spin" />}
+              {editingId ? "Update Product" : "Add Product"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -1288,11 +1286,11 @@ export default function Products() {
 }
 
 // Image Upload Form Component
-function ImageUploadForm({ 
-  onAdd, 
+function ImageUploadForm({
+  onAdd,
   disabled,
   productId
-}: { 
+}: {
   onAdd: (imageUrl: string, altText: string) => void;
   disabled?: boolean;
   productId?: number | null;
@@ -1375,7 +1373,7 @@ function ImageUploadForm({
         } else {
           throw new Error("No image URL returned from server");
         }
-        
+
         setSelectedFile(null);
         setFilePreview(null);
         setAltText("");
@@ -1435,22 +1433,20 @@ function ImageUploadForm({
         <button
           type="button"
           onClick={() => setUploadMethod("file")}
-          className={`px-2 py-1 text-xs font-medium transition-colors ${
-            uploadMethod === "file"
-              ? "border-b-2 border-primary text-primary"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`px-2 py-1 text-xs font-medium transition-colors ${uploadMethod === "file"
+            ? "border-b-2 border-primary text-primary"
+            : "text-muted-foreground hover:text-foreground"
+            }`}
         >
           📁 File
         </button>
         <button
           type="button"
           onClick={() => setUploadMethod("url")}
-          className={`px-2 py-1 text-xs font-medium transition-colors ${
-            uploadMethod === "url"
-              ? "border-b-2 border-primary text-primary"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`px-2 py-1 text-xs font-medium transition-colors ${uploadMethod === "url"
+            ? "border-b-2 border-primary text-primary"
+            : "text-muted-foreground hover:text-foreground"
+            }`}
         >
           🔗 URL
         </button>
@@ -1467,11 +1463,10 @@ function ImageUploadForm({
               setIsDragging(true);
             }}
             onDragLeave={() => setIsDragging(false)}
-            className={`relative border-2 border-dashed rounded-lg p-2 text-center transition-colors ${
-              isDragging
-                ? "border-primary bg-primary/5"
-                : "border-input bg-muted/50 hover:border-primary/50"
-            }`}
+            className={`relative border-2 border-dashed rounded-lg p-2 text-center transition-colors ${isDragging
+              ? "border-primary bg-primary/5"
+              : "border-input bg-muted/50 hover:border-primary/50"
+              }`}
           >
             <input
               type="file"

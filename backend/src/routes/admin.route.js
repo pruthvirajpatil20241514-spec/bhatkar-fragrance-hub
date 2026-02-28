@@ -19,6 +19,9 @@ router.post('/login', adminValidator.login, adminController.login);
 // Get Admin Profile - GET /api/admin/profile
 router.get('/profile', adminAuth, adminController.getProfile);
 
+// Get Dashboard Stats - GET /api/admin/dashboard/stats
+router.get('/dashboard/stats', adminAuth, adminController.getDashboardStats);
+
 // Admin Logout - POST /api/admin/logout
 router.post('/logout', adminAuth, adminController.logout);
 

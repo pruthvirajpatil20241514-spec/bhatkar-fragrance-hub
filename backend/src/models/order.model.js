@@ -2,6 +2,7 @@ const db = require('../config/db');
 const {
   getAllOrders: getAllOrdersQuery,
   getOrderById: getOrderByIdQuery,
+  getOrdersByUserId: getOrdersByUserIdQuery,
   createOrder: createOrderQuery,
   updateOrderStatus: updateOrderStatusQuery,
   getOrderByRazorpayId: getOrderByRazorpayIdQuery
@@ -9,6 +10,19 @@ const {
 const { logger } = require('../utils/logger');
 
 class Order {
+  /**
+   * Get orders by User ID
+   */
+  static async getByUserId(userId) {
+    try {
+      const [rows] = await db.query(getOrdersByUserIdQuery, [userId]);
+      return rows;
+    } catch (error) {
+      logger.error(`❌ Order model getByUserId error: ${error.message}`);
+      throw error;
+    }
+  }
+
   /**
    * Create new order
    */

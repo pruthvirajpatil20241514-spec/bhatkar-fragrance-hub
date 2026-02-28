@@ -12,7 +12,7 @@ export function NewsletterSection() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    
+
     // Simulate subscription
     setIsSubmitted(true);
     toast.success("Welcome to the Bhatkar & Co family!", {
@@ -23,10 +23,12 @@ export function NewsletterSection() {
   };
 
   return (
-    <section className="py-24 bg-secondary/50 relative overflow-hidden">
+    <section className="py-24 relative overflow-hidden bg-gradient-to-tr from-secondary/40 via-background to-secondary/30">
       {/* Decorative Elements */}
-      <div className="absolute top-0 left-1/4 w-64 h-64 rounded-full bg-primary/5 blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full bg-accent/5 blur-3xl" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-primary/10 blur-[120px]" />
+      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full bg-accent/10 blur-[140px]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.03] pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
       <div className="container px-4 relative z-10">
         <motion.div
