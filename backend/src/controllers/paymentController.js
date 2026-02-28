@@ -17,7 +17,8 @@ const { logger } = require('../utils/logger');
  */
 exports.createOrder = async (req, res) => {
   try {
-    const { productId, quantity = 1, contact = null } = req.body;
+    const { productId: rawProductId, quantity = 1, contact = null } = req.body;
+    const productId = Number(rawProductId);
 
     // Prefer userId from authenticated middleware (optionalAuth)
     // Allow guest checkout (userId will be null)
@@ -29,8 +30,8 @@ exports.createOrder = async (req, res) => {
     console.log(`   quantity: ${quantity}`);
 
     // Validate inputs
-    if (!productId) {
-      return res.status(400).json({ success: false, error: 'Product ID is required' });
+    if (!productId || isNaN(productId)) {
+      return res.status(400).json({ success: false, error: 'Product ID is required and must be a number' });
     }
 
     if (quantity < 1 || quantity > 100) {

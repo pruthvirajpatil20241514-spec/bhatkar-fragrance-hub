@@ -277,12 +277,10 @@ class PaymentService {
    * Get Order Details
    */
   async getOrderDetails(orderId) {
-    const queryResult = await db.query(
+    const [rows] = await db.query(
       'SELECT * FROM orders WHERE id = $1',
       [orderId]
     );
-
-    const rows = queryResult.rows;
 
     if (!rows || rows.length === 0) {
       throw new Error('Order not found');
@@ -295,12 +293,10 @@ class PaymentService {
    * Get Payment Details
    */
   async getPaymentDetails(paymentId) {
-    const queryResult = await db.query(
+    const [rows] = await db.query(
       'SELECT * FROM payments WHERE id = $1',
       [paymentId]
     );
-
-    const rows = queryResult.rows;
 
     if (!rows || rows.length === 0) {
       throw new Error('Payment not found');
