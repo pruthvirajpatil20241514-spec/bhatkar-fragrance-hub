@@ -20,13 +20,17 @@ exports.createOrder = async (req, res) => {
     const { productId: rawProductId, quantity = 1, contact = null } = req.body;
     const productId = Number(rawProductId);
 
-    // Prefer userId from authenticated middleware (optionalAuth)
-    // Allow guest checkout (userId will be null)
-    const userId = req.user?.id || null;
+    // Require userId from authenticated middleware (auth)
+    // Guest checkout is no longer allowed due to strict PostgreSQL foreign key constraints
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: You must be logged in to create an order' });
+    }
 
     console.log('📋 Processing create-order request:');
     console.log(`   productId: ${productId}`);
-    console.log(`   userId: ${userId ? userId : 'guest (none)'}`);
+    console.log(`   userId: ${userId}`);
     console.log(`   quantity: ${quantity}`);
 
     // Validate inputs

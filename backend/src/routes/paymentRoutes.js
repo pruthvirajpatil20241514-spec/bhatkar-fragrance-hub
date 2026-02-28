@@ -19,6 +19,7 @@ const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
 const optionalAuth = require('../middlewares/optionalAuth');
+const { auth } = require('../middlewares/auth');
 const { adminAuth } = require('../middlewares/adminAuth');
 const { captureRawBody, attachRawBody } = require('../middlewares/webhookMiddleware');
 
@@ -88,11 +89,11 @@ router.get('/health', async (req, res) => {
 
 // Create payment order
 // POST /api/payment/create-order
-// Body: { productId, userId, quantity }
-// Auth: Optional (userId extracted from JWT token if available, or from request body)
-router.post('/create-order', optionalAuth, (req, res, next) => {
+// Body: { productId, quantity }
+// Auth: Required (userId extracted from JWT token)
+router.post('/create-order', auth, (req, res, next) => {
   console.log('📨 POST /api/payment/create-order received');
-  console.log('   📄 Body:', { productId: req.body.productId, userId: req.body.userId, quantity: req.body.quantity });
+  console.log('   📄 Body:', { productId: req.body.productId, quantity: req.body.quantity });
   console.log('   👤 User from token:', req.user?.id || 'none');
   next();
 }, paymentController.createOrder);
