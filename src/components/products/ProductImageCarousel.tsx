@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './ProductImageCarousel.css';
+import SafeImage from '@/components/ui/SafeImage';
 
 interface ProductImage {
   id: number;
@@ -106,15 +107,12 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
           </div>
         )}
 
-        <img
+        <SafeImage
           src={buildImageUrl(sortedImages[selectedImageIndex]?.image_url)}
           alt={sortedImages[selectedImageIndex]?.alt_text || 'Product Image'}
           className={`main-image ${imageLoaded ? 'loaded' : 'loading'}`}
-          onLoad={() => setImageLoaded(true)}
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/500x500?text=Product+Image';
-            setImageLoaded(true);
-          }}
+          onSuccessLoad={() => setImageLoaded(true)}
+          style={{ position: 'static', background: 'transparent' }}
         />
 
         {/* Image Counter */}
@@ -145,13 +143,11 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
                 className={`carousel-item ${selectedImageIndex === index ? 'active' : ''}`}
                 onClick={() => setSelectedImageIndex(index)}
               >
-                <img
+                <SafeImage
                   src={buildImageUrl(image.image_url)}
                   alt={image.alt_text}
                   className="carousel-image"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/120x120?text=Img';
-                  }}
+                  style={{ position: 'static', background: 'transparent', width: '100%', height: '100%' }}
                 />
                 {image.is_thumbnail && <div className="thumbnail-badge">Thumbnail</div>}
               </div>

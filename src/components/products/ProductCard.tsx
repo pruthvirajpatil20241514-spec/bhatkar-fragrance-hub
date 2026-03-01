@@ -8,7 +8,8 @@ import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { formatPrice, cn } from "@/lib/utils";
-import { getProductImageWithFallback, handleImageError } from "@/lib/imageUtils";
+import { getProductImageWithFallback } from "@/lib/imageUtils";
+import SafeImage from "@/components/ui/SafeImage";
 
 interface ProductImage {
   id: number;
@@ -48,7 +49,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const { addItem } = useCart();
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
-  const isWishlisted = isInWishlist(product.id);
+  const isWishlisted = isInWishlist(String(product.id));
 
   const isStatic = isStaticProduct(product);
   const imageUrl = isStatic
@@ -86,13 +87,11 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         <div className="relative overflow-hidden rounded-lg bg-card shadow-soft transition-shadow duration-300 group-hover:shadow-medium">
           {/* Image Container */}
           <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
-            <motion.img
+            <SafeImage
               src={imageUrl}
               alt={productName}
-              className="h-full w-full object-cover"
-              animate={{ scale: isHovered ? 1.05 : 1 }}
-              transition={{ duration: 0.4 }}
-              onError={(e) => handleImageError(e as any)}
+              className="h-full w-full"
+              style={{ aspectRatio: '3/4' }}
             />
 
             {/* Badges - Only show for static products */}
@@ -146,7 +145,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                 e.preventDefault();
                 e.stopPropagation();
                 if (isWishlisted) {
-                  removeFromWishlist(product.id);
+                  removeFromWishlist(String(product.id));
                 } else {
                   addToWishlist(product as any);
                 }
@@ -271,7 +270,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                   e.preventDefault();
                   e.stopPropagation();
                   if (isWishlisted) {
-                    removeFromWishlist(product.id);
+                    removeFromWishlist(String(product.id));
                   } else {
                     addToWishlist(product as any);
                   }
