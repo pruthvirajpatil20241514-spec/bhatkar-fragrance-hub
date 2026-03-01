@@ -3,17 +3,27 @@ const { asyncHandler } = require('../middlewares/asyncHandler');
 const adminAuth = require('../middlewares/adminAuth');
 const upload = require('../config/multer.config');
 const imageUploadController = require('../controllers/imageUpload.controller');
+const { proxyImage, cacheStats } = require('../controllers/imageProxy.controller');
 
-/**
- * Image Upload Routes (Admin Protected)
- */
+// ─── PUBLIC: Image Proxy ──────────────────────────────────────────────────────
+// Proxies product images from Supabase Storage through the backend.
+// This eliminates direct browser → Supabase CDN connections which can timeout.
+//
+// GET /api/images/proxy/<filename>
+// GET /api/images/proxy/<folder>/<filename>    (path with slashes)
+router.get('/proxy/*', asyncHandler(proxyImage));
+
+// Debug only – returns in-memory cache stats (no auth needed, read-only)
+router.get('/cache-stats', asyncHandler(cacheStats));
+
+// ─── ADMIN: Upload / Delete ───────────────────────────────────────────────────
 
 // Upload images to a product (admin only)
 // POST /api/images/upload/:productId
 router.post(
   '/upload/:productId',
   adminAuth,
-  upload.array('images', 4), // Accept up to 4 files with field name 'images'
+  upload.array('images', 4),
   asyncHandler(imageUploadController.uploadProductImages)
 );
 
@@ -35,3 +45,4 @@ router.delete(
 );
 
 module.exports = router;
+

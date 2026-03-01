@@ -1,7 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import api from "@/lib/axios";
 
-// Interface reflecting the normalized product structure
+// ─── Image Proxy URL Transformer ─────────────────────────────────────────────
+// All Supabase CDN URLs are rewritten to go through the backend image proxy.
+// This eliminates ERR_CONNECTION_TIMED_OUT from direct browser→Supabase requests.
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'https://bhatkar-fragrance-hub-1.onrender.com';
+const SUPABASE_STORAGE_RE = /https?:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\/products\//;
+
+function toProxyUrl(url: string): string {
+    if (!url || !url.startsWith('http')) return url;
+    const match = url.match(SUPABASE_STORAGE_RE);
+    if (!match) return url;
+    const filename = url.slice(match.index! + match[0].length);
+    return `${BACKEND_URL}/api/images/proxy/${filename}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface NormalizedProduct {
     id: number;
     name: string;
@@ -112,11 +127,14 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
 
                 // Convert image objects to flat string arrays if necessary,
                 // while also handling null/undefined safely.
+                // CRITICAL: rewrite Supabase CDN URLs → backend proxy URLs
                 if (normalized.images.length > 0) {
                     normalized.images = normalized.images.map((img: any) => {
-                        if (typeof img === 'string') return img;
-                        if (img && typeof img === 'object' && img.image_url) return img.image_url;
-                        return '/images/fallback/perfume1.svg';
+                        let url: string;
+                        if (typeof img === 'string') url = img;
+                        else if (img && typeof img === 'object' && img.image_url) url = img.image_url;
+                        else url = '/images/fallback/perfume1.svg';
+                        return toProxyUrl(url); // Rewrite Supabase → proxy
                     });
                 }
 
