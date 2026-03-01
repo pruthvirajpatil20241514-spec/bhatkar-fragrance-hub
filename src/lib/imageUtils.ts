@@ -21,7 +21,7 @@
  * @param fallback - Optional fallback URL (default: '/placeholder.svg')
  * @returns Safe string URL for <img src> attribute
  */
-export function getProductImage(image: any, fallback: string = '/placeholder.svg'): string {
+export function getProductImage(image: any, fallback: string = '/images/fallback/perfume1.svg'): string {
   try {
     // Handle null/undefined
     if (image === null || image === undefined) {
@@ -160,7 +160,7 @@ export function getProductImage(image: any, fallback: string = '/placeholder.svg
  */
 export function handleImageError(
   event: React.SyntheticEvent<HTMLImageElement>,
-  fallback: string = '/placeholder.svg'
+  fallback: string = '/images/fallback/placeholder.svg'
 ): void {
   const img = event.currentTarget;
   const originalSrc = img.src;
@@ -186,7 +186,7 @@ export function handleImageError(
  */
 export function getProductImageWithFallback(
   image: any,
-  fallback: string = '/placeholder.svg'
+  fallback: string = '/images/fallback/perfume1.svg'
 ): string {
   const url = getProductImage(image, fallback);
 
@@ -226,7 +226,7 @@ export function normalizeProductImages(product: any): any {
       normalized.images = normalized.images
         .map((img: any) => {
           const url = getProductImage(img);
-          return url !== '/placeholder.svg' ? url : null;
+          return url !== '/images/fallback/perfume1.svg' ? url : null;
         })
         .filter(Boolean);
     } else if (typeof normalized.images === 'string') {
@@ -235,7 +235,7 @@ export function normalizeProductImages(product: any): any {
     } else if (typeof normalized.images === 'object') {
       // Single object
       const url = getProductImage(normalized.images);
-      normalized.images = url !== '/placeholder.svg' ? [url] : [];
+      normalized.images = url !== '/images/fallback/perfume1.svg' ? [url] : [];
     }
   }
 
@@ -259,7 +259,7 @@ export function normalizeVariantImages(images: any[]): string[] {
   return images
     .map((img: any) => {
       const url = getProductImage(img);
-      return url !== '/placeholder.svg' ? url : null;
+      return url !== '/images/fallback/perfume1.svg' ? url : null;
     })
     .filter(Boolean) as string[];
 }

@@ -256,6 +256,27 @@ exports.getAllProductsWithImages = async (req, res) => {
       // Optimized products are already returned with their stored public URLs.
       // We no longer need to sign or refresh Supabase Public URLs.
 
+      const defaultFallbackUrl = "/images/fallback/perfume1.svg";
+
+      // Inject fallback image to ensure frontend NEVER receives empty images
+      products = products.map(p => {
+        let firstImgUrl = defaultFallbackUrl;
+        let mappedImages = [];
+
+        if (Array.isArray(p.images) && p.images.length > 0) {
+          mappedImages = p.images.map(img => ({ ...img, image_url: img.image_url || defaultFallbackUrl }));
+          if (mappedImages[0].image_url) firstImgUrl = mappedImages[0].image_url;
+        } else {
+          mappedImages = [{ image_url: defaultFallbackUrl }];
+        }
+
+        return {
+          ...p,
+          image_url: p.image_url || firstImgUrl,
+          images: mappedImages
+        };
+      });
+
       // Cache the result
       setCachedProducts(products);
 
@@ -264,10 +285,13 @@ exports.getAllProductsWithImages = async (req, res) => {
     } catch (err) {
       // Fallback - return products with original image URLs
       logger.warn('Image URL processing failed:', err.message);
-      const fallbackUrl = process.env.DEFAULT_PRODUCT_IMAGE_URL || '/uploads/default-product.png';
+      const fallbackUrl = process.env.DEFAULT_PRODUCT_IMAGE_URL || '/images/fallback/perfume1.svg';
       products = products.map(p => ({
         ...p,
-        images: (p.images || []).map(img => ({ ...img, image_url: img.image_url || fallbackUrl }))
+        image_url: p.image_url || fallbackUrl,
+        images: Array.isArray(p.images) && p.images.length > 0
+          ? p.images.map(img => ({ ...img, image_url: img.image_url || fallbackUrl }))
+          : [{ image_url: fallbackUrl }]
       }));
       setCachedProducts(products);
       logger.info(`✅ Retrieved ${products.length} products with fallback images`);

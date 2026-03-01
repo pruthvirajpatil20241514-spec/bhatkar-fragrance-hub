@@ -49,19 +49,19 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { addItem } = useCart();
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const isWishlisted = isInWishlist(product.id);
-  
+
   const isStatic = isStaticProduct(product);
   const imageUrl = isStatic
     ? // static products store simple image strings
-      (product as Product).images && (product as Product).images.length ? (product as Product).images[0] : '/placeholder.svg'
-    : getProductImageWithFallback((product as DatabaseProduct).images, '/placeholder.svg');
+    (product as Product).images && (product as Product).images.length ? (product as Product).images[0] : '/images/fallback/perfume1.svg'
+    : getProductImageWithFallback((product as DatabaseProduct).images, '/images/fallback/perfume1.svg');
   const productPrice = product.price;
   const productName = product.name;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (isStatic) {
       const staticProduct = product as Product;
       const defaultSize = staticProduct.sizes[staticProduct.sizes.length - 1];
@@ -112,7 +112,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                     {Math.round(
                       (((product as Product).originalPrice - productPrice) /
                         (product as Product).originalPrice) *
-                        100
+                      100
                     )}
                     % Off
                   </Badge>
@@ -255,15 +255,15 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
             {/* Mobile Quick Action Buttons */}
             <div className="flex gap-2 md:hidden">
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 className="flex-1 h-8 text-xs"
                 onClick={handleAddToCart}
               >
                 <ShoppingBag className="h-3 w-3 mr-1" />
                 Add
               </Button>
-              <Button 
+              <Button
                 size="sm"
                 variant={isWishlisted ? "default" : "outline"}
                 className="h-8 w-8 p-0"

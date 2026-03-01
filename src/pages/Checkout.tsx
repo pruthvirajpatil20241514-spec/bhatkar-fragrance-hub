@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, Lock, Truck, Gift } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -26,20 +26,31 @@ export default function Checkout() {
   const location = useLocation();
 
   // Get data from navigation state if available
-  const stateData = location.state || {};
+  const stateData = location.state || null;
+
+  // IMPORTANT: Redirect back to cart if state is missing (prevents broken flow from Razorpay external redirects)
+  React.useEffect(() => {
+    if (!stateData && state.items.length > 0) {
+      toast({
+        title: "Session Reset",
+        description: "Please restart the checkout process securely.",
+      });
+      navigate("/cart");
+    }
+  }, [stateData, state.items.length, navigate, toast]);
 
   const [loading, setLoading] = useState(false);
   const [paymentReady, setPaymentReady] = useState(false);
   const [formData, setFormData] = useState({
-    email: stateData.email || user?.email || "",
-    firstName: stateData.firstName || user?.firstname || "",
-    lastName: stateData.lastName || user?.lastname || "",
-    phone: stateData.phone || "",
-    address: stateData.address || "",
-    city: stateData.city || "",
-    state: stateData.state || "",
-    zipCode: stateData.zipCode || "",
-    country: stateData.country || "IN",
+    email: stateData?.email || user?.email || "",
+    firstName: stateData?.firstName || user?.firstname || "",
+    lastName: stateData?.lastName || user?.lastname || "",
+    phone: stateData?.phone || "",
+    address: stateData?.address || "",
+    city: stateData?.city || "",
+    state: stateData?.state || "",
+    zipCode: stateData?.zipCode || "",
+    country: stateData?.country || "IN",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

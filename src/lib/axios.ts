@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "sonner";
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || "https://bhatkar-fragrance-hub-5.onrender.com/api";
 
@@ -107,17 +108,27 @@ api.interceptors.response.use(
         // Clear tokens from storage
         localStorage.removeItem("token");
         localStorage.removeItem("adminToken");
+        localStorage.removeItem("role");
         localStorage.removeItem("user");
+        localStorage.removeItem("admin");
         localStorage.removeItem("userEmail");
         localStorage.removeItem("userPhone");
 
-        // Force redirect to login page (avoid infinity loop if already on login)
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/auth')) {
-          // Add a small delay for user to notice the console error if debugging
+        // Inform user
+        toast.error("Session expired, please login again");
+
+        // Force redirect to home page, since there is no standalone /login page
+        if (window.location.pathname !== '/') {
           setTimeout(() => {
-            window.location.href = '/login?expired=true';
-          }, 100);
+            window.location.href = '/';
+          }, 1500);
           return new Promise(() => { }); // Stop the promise chain
+        } else {
+          // If already on home, just reload to clear UI state safely
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+          return new Promise(() => { });
         }
       }
 

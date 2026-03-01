@@ -2,11 +2,13 @@ import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { formatPrice, getImageUrl } from "@/lib/utils";
 import { Layout } from "@/components/layout/Layout";
 
 export default function Cart() {
   const { state, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
+  const { user } = useAuth();
 
   if (state.items.length === 0) {
     return (
@@ -165,7 +167,15 @@ export default function Cart() {
                   </div>
 
                   <div className="space-y-2">
-                    <Link to="/checkout" className="block">
+                    <Link
+                      to="/checkout"
+                      state={{
+                        email: user?.email || '',
+                        firstName: user?.firstname || '',
+                        lastName: user?.lastname || ''
+                      }}
+                      className="block"
+                    >
                       <Button className="w-full" size="sm" >
                         Proceed to Checkout
                       </Button>
