@@ -31,6 +31,34 @@ function getSupabaseClient() {
     return supabaseInstance;
 }
 
+const BUCKET_NAME = process.env.SUPABASE_STORAGE_BUCKET || 'products';
+console.log(`📦 Supabase Storage configured with bucket: "${BUCKET_NAME}"`);
+
+/**
+ * Validate that the bucket exists in Supabase
+ */
+async function validateBucket() {
+    try {
+        const { data: buckets, error } = await getSupabaseClient().storage.listBuckets();
+
+        if (error) {
+            console.error("❌ Error listing buckets:", error.message);
+            return false;
+        }
+
+        const bucketExists = buckets.some(b => b.id === BUCKET_NAME);
+        if (!bucketExists) {
+            console.error(`❌ Storage bucket "${BUCKET_NAME}" not found! Available buckets:`, buckets.map(b => b.id));
+            return false;
+        }
+
+        return true;
+    } catch (err) {
+        console.error("❌ Exception during bucket validation:", err.message);
+        return false;
+    }
+}
+
 /**
  * Upload file buffer to Supabase Storage
  * @param {Buffer} fileBuffer 
@@ -39,7 +67,14 @@ function getSupabaseClient() {
  * @returns {Promise<string>} Public URL
  */
 async function uploadToSupabase(fileBuffer, fileName, mimeType) {
-    const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'products';
+    const bucket = BUCKET_NAME;
+
+    // Validate bucket exists before upload to provide clear error message
+    const isValid = await validateBucket();
+    if (!isValid) {
+        throw new Error(`Storage bucket "${bucket}" does not exist. Please create it in your Supabase Dashboard.`);
+    }
+
     // Ensure the filePath DOES NOT include the bucket name as a prefix
     const filePath = `${Date.now()}-${fileName}`;
 
@@ -80,7 +115,7 @@ async function uploadToSupabase(fileBuffer, fileName, mimeType) {
  * @param {string} fileUrl 
  */
 async function deleteFromSupabase(fileUrl) {
-    const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'products';
+    const bucket = BUCKET_NAME;
 
     try {
         // Extract path from public URL
