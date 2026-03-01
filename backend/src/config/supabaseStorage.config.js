@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 
+// Environment validation (non-blocking)
 if (!process.env.SUPABASE_URL) {
     console.error('❌ SUPABASE_URL is missing in .env');
 }
@@ -7,13 +8,28 @@ if (!process.env.SUPABASE_URL) {
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('❌ SUPABASE_SERVICE_ROLE_KEY is missing in .env');
 } else if (!process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('eyJ')) {
-    console.error('⚠️  SUPABASE_SERVICE_ROLE_KEY does not appear to be a service role key. It should start with "eyJ".');
+    console.warn('⚠️  SUPABASE_SERVICE_ROLE_KEY does not appear to be a service role key. It should start with "eyJ".');
 }
 
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+let supabaseInstance = null;
+
+/**
+ * Get the Supabase client instance (lazy loaded)
+ */
+function getSupabaseClient() {
+    if (supabaseInstance) return supabaseInstance;
+
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        throw new Error("Missing Supabase environment variables");
+    }
+
+    supabaseInstance = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    return supabaseInstance;
+}
 
 /**
  * Upload file buffer to Supabase Storage
@@ -24,11 +40,13 @@ const supabase = createClient(
  */
 async function uploadToSupabase(fileBuffer, fileName, mimeType) {
     const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'products';
-    // Corrected: Remove folder prefix as bucket is already "products"
+    // Ensure the filePath DOES NOT include the bucket name as a prefix
     const filePath = `${Date.now()}-${fileName}`;
 
+    console.log(`📤 Uploading to Supabase: Bucket=${bucket}, Path=${filePath}`);
+
     try {
-        const { data, error } = await supabase.storage
+        const { data, error } = await getSupabaseClient().storage
             .from(bucket)
             .upload(filePath, fileBuffer, {
                 contentType: mimeType,
@@ -46,7 +64,7 @@ async function uploadToSupabase(fileBuffer, fileName, mimeType) {
             throw new Error(`Supabase upload error: ${error.message}`);
         }
 
-        const { data: publicUrlData } = supabase.storage
+        const { data: publicUrlData } = getSupabaseClient().storage
             .from(bucket)
             .getPublicUrl(filePath);
 
@@ -71,7 +89,7 @@ async function deleteFromSupabase(fileUrl) {
 
         const filePath = urlParts[urlParts.length - 1];
 
-        const { error } = await supabase.storage
+        const { error } = await getSupabaseClient().storage
             .from(bucket)
             .remove([filePath]);
 
@@ -88,7 +106,7 @@ async function deleteFromSupabase(fileUrl) {
 }
 
 module.exports = {
-    supabase,
+    getSupabaseClient,
     uploadToSupabase,
     deleteFromSupabase
 };

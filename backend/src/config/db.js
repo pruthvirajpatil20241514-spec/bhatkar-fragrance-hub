@@ -80,8 +80,8 @@ async function queryOne(sql, params = []) {
     return result.rows.length > 0 ? result.rows[0] : null;
 }
 
-// Initial verification
-verifyConnection().catch(err => logger.error('Unhandled DB verification error:', err));
+// Initial verification removed from here to prevent blocking module loading.
+// It should be called explicitly during startup (e.g., in index.js)
 
 const queryWrapper = async (text, params) => {
     try {

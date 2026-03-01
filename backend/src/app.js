@@ -64,17 +64,26 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.get("/api/health", async (req, res) => {
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+app.get("/api/health/detailed", async (req, res) => {
   const db = require("./config/db");
   try {
-    await db.query('SELECT 1');
+    const result = await db.query('SELECT NOW()');
     res.status(200).json({
       status: "ok",
       database: "connected",
+      dbTime: result.rows[0].now,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    logger.error('Database health check failed:', error.message);
+    logger.error('Detailed health check failed:', error.message);
     res.status(503).json({
       status: "error",
       database: "disconnected",

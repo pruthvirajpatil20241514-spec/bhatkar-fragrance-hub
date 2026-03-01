@@ -13,6 +13,19 @@ const adminAuth = (req, res, next) => {
 
     const decoded = decodeToken(token);
 
+    if (decoded && decoded.error) {
+        if (decoded.error.name === 'TokenExpiredError') {
+            return res.status(401).send({
+                status: 'error',
+                message: 'Session expired. Please login again.'
+            });
+        }
+        return res.status(401).send({
+            status: 'error',
+            message: 'Invalid or expired token.'
+        });
+    }
+
     if (!decoded) {
         return res.status(401).send({
             status: 'error',

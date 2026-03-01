@@ -10,18 +10,33 @@ const PORT = process.env.PORT || 5000;
  */
 async function startServer() {
     try {
-        // Verify database connection
-        await db.verifyConnection();
-
-        // Run startup migrations (add columns, indexes, etc.)
-        await runStartupMigrations(db, logger);
-
+        // Start listening immediately to satisfy Render's health checks
         const server = app.listen(PORT, '0.0.0.0', () => {
             logger.info('============================================================');
             logger.info(`🚀 SERVER STARTED ON PORT ${PORT}`);
             logger.info(`⏱️  Uptime: ${process.uptime()}s`);
             logger.info('============================================================');
         });
+
+        // Background tasks (non-blocking)
+        (async () => {
+            try {
+                logger.info('🔄 Starting background initialization...');
+
+                // Verify database connection
+                const connected = await db.verifyConnection();
+                if (!connected) {
+                    logger.error('⚠️ Database connection could not be established in background.');
+                } else {
+                    // Run startup migrations
+                    await runStartupMigrations(db, logger);
+                }
+
+                logger.info('✅ Background initialization sequence finished.');
+            } catch (initError) {
+                logger.error('❌ Background initialization error:', initError.message);
+            }
+        })();
 
         // Handle server errors
         server.on('error', (err) => {
