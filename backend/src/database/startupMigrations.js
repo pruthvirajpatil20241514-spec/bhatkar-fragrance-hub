@@ -36,6 +36,9 @@ async function runStartupMigrations(db, loggerUtil = logger) {
     // Migration 5: Create indexes
     await createIndexes(db, loggerUtil);
 
+    // Migration 6: Fix is_active NULL values and set default
+    await fixIsActiveDefault(db, loggerUtil);
+
     loggerUtil.info('✅ All startup migrations completed successfully');
     return { success: true, message: 'Migrations complete' };
 
@@ -275,6 +278,36 @@ async function createIndexIfNotExists(db, loggerUtil, indexName, tableName, colu
 
   } catch (error) {
     loggerUtil.warn(`  ⚠️ Could not create index ${indexName}:`, error.message);
+  }
+}
+
+/**
+ * Fix is_active column: set default to true and update NULLs
+ */
+async function fixIsActiveDefault(db, loggerUtil) {
+  try {
+    loggerUtil.info('  Ensuring is_active defaults to true and fixing NULLs...');
+
+    // 1. Update existing NULLs to true
+    const updateResult = await db.query(`
+      UPDATE products 
+      SET is_active = TRUE 
+      WHERE is_active IS NULL
+    `);
+    if (updateResult.rowCount > 0) {
+      loggerUtil.info(`  ✅ Updated ${updateResult.rowCount} products with NULL is_active to TRUE`);
+    }
+
+    // 2. Ensure the column default is TRUE in PostgreSQL
+    await db.query(`
+      ALTER TABLE products 
+      ALTER COLUMN is_active SET DEFAULT TRUE
+    `);
+
+    loggerUtil.info('  ✅ is_active default set to TRUE');
+
+  } catch (error) {
+    loggerUtil.warn('  ⚠️ Could not fix is_active defaults:', error.message);
   }
 }
 

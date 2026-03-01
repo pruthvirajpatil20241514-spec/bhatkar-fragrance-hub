@@ -34,9 +34,11 @@ class PaymentService {
 
       // 2. Fetch product price from database (NEVER from frontend)
       const queryResult = await conn.query(
-        'SELECT id, name, price FROM products WHERE id = $1 AND is_active = true',
+        'SELECT id, name, price, is_active FROM products WHERE id = $1 AND COALESCE(is_active, true) = true',
         [productId]
       );
+
+      console.log(`🔍 Payment product lookup: ID=${productId}, found=${queryResult.rows.length}`, queryResult.rows);
 
       const productRows = queryResult.rows;
 

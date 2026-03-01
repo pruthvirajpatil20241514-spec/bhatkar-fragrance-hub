@@ -78,7 +78,7 @@ exports.createProduct = async (req, res) => {
             stock || 0,
             !!is_best_seller,
             !!is_luxury_product,
-            is_active !== undefined ? !!is_active : false,
+            is_active !== undefined ? !!is_active : true,
             original_price || null,
             discount_percentage || 0,
             shipping_cost || 0,
@@ -132,7 +132,7 @@ exports.updateProduct = async (req, res) => {
             stock: stock || 0,
             is_best_seller: !!is_best_seller,
             is_luxury_product: !!is_luxury_product,
-            is_active: is_active !== undefined ? !!is_active : false
+            is_active: is_active !== undefined ? !!is_active : true
         };
 
         // If attempting to set product active, enforce minimum 2 active reviews
