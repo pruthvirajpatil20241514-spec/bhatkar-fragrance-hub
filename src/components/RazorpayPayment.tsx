@@ -89,7 +89,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         name: 'Bhatkar Fragrance Hub',
         description: `Purchase - ${productName}`,
         order_id: razorpayOrderId,
-        
+
         // Success handler
         handler: async (response: any) => {
           try {
@@ -131,8 +131,27 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
           }
         },
 
+        // Payment configuration
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "Pay via UPI",
+                instruments: [
+                  { method: "upi", apps: ["google_pay", "phonepe", "paytm"] }
+                ]
+              }
+            },
+            sequence: ["block.upi", "method.card", "method.netbanking", "method.wallet"],
+            preferences: {
+              show_default_blocks: true
+            }
+          }
+        },
+
         // Contact information
         prefill: {
+          name: localStorage.getItem('userName') || '',
           email: localStorage.getItem('userEmail') || '',
           contact: localStorage.getItem('userPhone') || ''
         },

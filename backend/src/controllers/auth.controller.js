@@ -10,7 +10,7 @@ exports.signup = async (req, res) => {
         const user = new User(firstname.trim(), lastname.trim(), email.trim(), hashedPassword);
 
         const data = await User.create(user);
-        const token = generateToken(data.id);
+        const token = generateToken(data.id, data.email);
         res.status(201).send({
             status: "success",
             data: {
@@ -33,9 +33,9 @@ exports.signin = async (req, res) => {
     try {
         const { email, password } = req.body;
         const data = await User.findByEmail(email.trim());
-        
+
         if (comparePassword(password.trim(), data.password)) {
-            const token = generateToken(data.id);
+            const token = generateToken(data.id, data.email);
             res.status(200).send({
                 status: 'success',
                 data: {

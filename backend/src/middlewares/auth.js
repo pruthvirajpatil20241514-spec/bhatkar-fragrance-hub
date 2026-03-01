@@ -25,10 +25,19 @@ const auth = async (req, res, next) => {
         const token = authHeader.split(' ')[1];
         const decoded = decode(token);
 
+        if (decoded && decoded.error) {
+            return res.status(401).json({
+                success: false,
+                message: 'Session expired. Please login again.',
+                error: decoded.error.message
+            });
+        }
+
         if (!decoded || !decoded.id || !decoded.email) {
             return res.status(401).json({
                 success: false,
-                error: 'Authentication failed: Invalid or expired token'
+                message: 'Session expired. Please login again.',
+                error: 'Invalid or expired token'
             });
         }
 

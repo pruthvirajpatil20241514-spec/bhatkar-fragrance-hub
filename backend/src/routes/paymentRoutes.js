@@ -104,7 +104,7 @@ router.post('/create-order', auth, (req, res, next) => {
 // POST /api/payment/verify
 // Body: { orderId, razorpay_payment_id, razorpay_signature }
 // Auth: Required for security
-router.post('/verify', (req, res, next) => {
+router.post('/verify', auth, (req, res, next) => {
   console.log('🔐 POST /api/payment/verify received');
   next();
 }, paymentController.verifyPayment);

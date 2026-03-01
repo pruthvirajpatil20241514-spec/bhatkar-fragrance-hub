@@ -18,9 +18,9 @@ api.interceptors.request.use(
     const fullUrl = `${config.baseURL || ''}${config.url}`;
     const method = config.method?.toUpperCase() || 'GET';
     const timestamp = new Date().toISOString();
-    
+
     console.log(`📡 [${timestamp}] ${method} ${fullUrl}`);
-    
+
     // ===== AUTHENTICATION HANDLING =====
     // Public GET endpoints (read-only operations - POST/PUT/DELETE need auth)
     const publicGetEndpoints = [
@@ -29,22 +29,20 @@ api.interceptors.request.use(
       "/products",
       "/variants",
       "/reviews",
-      "/payment/create-order",
-      "/payment/verify",
     ];
-    
+
     const requestMethod = config.method?.toLowerCase() || 'get';
     const url = config.url || '';
-    
+
     // Only treat as public if it's a GET request to a public endpoint
-    const isPublicGetEndpoint = publicGetEndpoints.some(endpoint => 
+    const isPublicGetEndpoint = publicGetEndpoints.some(endpoint =>
       url.includes(endpoint) && requestMethod === 'get'
     );
-    
+
     // Add token for ALL protected requests (POST, PUT, DELETE)
     if (!isPublicGetEndpoint) {
       const token = localStorage.getItem("adminToken") || localStorage.getItem("token");
-      
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
         console.log(`  🔐 Auth: Token attached`);
@@ -66,7 +64,7 @@ api.interceptors.request.use(
       config.headers["Content-Type"] = "application/json";
       console.log(`  📄 Content-Type: application/json`);
     }
-    
+
     return config;
   },
   (error) => {
@@ -79,63 +77,58 @@ api.interceptors.request.use(
 // Handle success and error responses with detailed logging
 api.interceptors.response.use(
   (response) => {
-    const { status, statusText, config } = response;
+    const { status, config } = response;
     const method = config.method?.toUpperCase() || 'GET';
     const url = config.url;
-    
+
     // Success logging
     if (status >= 200 && status < 300) {
       console.log(`✅ Success [${status}] ${method} ${url}`);
     } else {
       console.warn(`⚠️ Status [${status}] ${method} ${url}`);
     }
-    
+
     return response;
   },
   (error) => {
     // ===== ERROR RESPONSE =====
     if (error.response) {
-      const { status, statusText, data, config } = error.response;
+      const { status, data, config } = error.response;
       const method = config?.method?.toUpperCase() || 'UNKNOWN';
       const url = config?.url || 'unknown';
-      
+
       // Log detailed error information
       console.error(`❌ HTTP Error [${status}] ${method} ${url}`);
-      console.error(`   Status: ${status} ${statusText}`);
-      
+
+      // ===== GLOBAL AUTH HANDLING (401/403) =====
+      if (status === 401 || status === 403) {
+        console.error(`   ℹ️ Session expired or unauthorized. Redirecting to login...`);
+
+        // Clear tokens from storage
+        localStorage.removeItem("token");
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("userPhone");
+
+        // Force redirect to login page (avoid infinity loop if already on login)
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/auth')) {
+          window.location.href = '/login?expired=true';
+        }
+      }
+
       // Log error message from backend if available
       if (data?.error) {
         console.error(`   Backend Error: ${data.error}`);
       } else if (data?.message) {
         console.error(`   Message: ${data.message}`);
       }
-      
-      // Special handling for 404 errors
-      if (status === 404) {
-        console.error(`   ℹ️  Endpoint not found. Check route definition on backend.`);
-      }
-      
-      // Special handling for 401/403 errors
-      if (status === 401 || status === 403) {
-        console.error(`   ℹ️  Authentication/Authorization failed. Check token.`);
-      }
-      
-      // Special handling for 500 errors
-      if (status >= 500) {
-        console.error(`   ℹ️  Server error. Check backend logs.`);
-      }
     }
     // ===== NO RESPONSE (Network Error) =====
     else if (error.request) {
       console.error('❌ Network Error: No response from server');
-      console.error(`   Request: ${error.request.method} ${error.request.url}`);
-      console.error(`   ℹ️  Check if backend is running and CORS is enabled.`);
     }
-    // ===== REQUEST SETUP ERROR =====
-    else {
-      console.error('❌ Error:', error.message);
-    }
-    
+
     return Promise.reject(error);
   }
 );
