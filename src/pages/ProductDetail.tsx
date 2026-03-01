@@ -96,6 +96,17 @@ export default function ProductDetail() {
         // Use standard normalization utility for images and consistent structure
         normalized = normalizeProductImages(normalized);
 
+        // **CRITICAL FIX**: Inject local asset images to prevent Supabase timeouts for known products
+        const matchingStatic = products.find(sp =>
+          sp.name && p.name && sp.name.toLowerCase().trim() === p.name.toLowerCase().trim()
+        );
+        if (matchingStatic && matchingStatic.images && matchingStatic.images.length > 0) {
+          normalized.images = matchingStatic.images;
+          if (normalized.image_url !== undefined) {
+            normalized.image_url = matchingStatic.images[0];
+          }
+        }
+
         // Ensure description is a string
         if (typeof normalized.description !== 'string') {
           normalized.description = '';

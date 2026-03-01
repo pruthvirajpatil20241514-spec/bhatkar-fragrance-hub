@@ -131,12 +131,26 @@ export default function Shop() {
 
         // Normalize products: Ensure images is always an array and price is a number
         const newProducts = rawProducts.map((p: any) => {
-          // Normalize images using utility
+          // Normalizer handles basic formatting
           const normalized = normalizeProductImages(p);
 
-          // Double defensive: if normalization failed to ensure array, force it
           if (!normalized.images || !Array.isArray(normalized.images)) {
             normalized.images = [];
+          }
+
+          // **CRITICAL FIX**: If this product matches one of our local static products,
+          // inject the beautiful local asset image as the primary image, to prevent Supabase
+          // timeouts from ruining the display of known catalogue items.
+          const matchingStatic = products.find(sp =>
+            sp.name && p.name && sp.name.toLowerCase().trim() === p.name.toLowerCase().trim()
+          );
+
+          if (matchingStatic && matchingStatic.images && matchingStatic.images.length > 0) {
+            // Overwrite the DB images with the local static asset image
+            normalized.images = matchingStatic.images;
+            if (normalized.image_url !== undefined) {
+              normalized.image_url = matchingStatic.images[0];
+            }
           }
 
           return normalized;
@@ -185,8 +199,11 @@ export default function Shop() {
   }, []); // Empty dependency array - effect runs once on mount
 
   const filteredProducts = useMemo(() => {
-    // Use database products if available, otherwise fall back to static products
-    let sourceProducts = dbProducts && dbProducts.length > 0 ? dbProducts : products;
+    // Combine database products with static products (preventing duplicates by name)
+    const dbNames = new Set((dbProducts || []).map(p => p.name?.toLowerCase()));
+    const uniqueStaticProducts = products.filter(p => !dbNames.has(p.name?.toLowerCase()));
+
+    let sourceProducts = [...(dbProducts || []), ...uniqueStaticProducts];
 
     let result = [...sourceProducts];
 

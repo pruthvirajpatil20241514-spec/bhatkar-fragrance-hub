@@ -22,6 +22,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatPrice } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { products } from "@/data/products";
 
 interface ProductImage {
   id: number;
@@ -84,10 +85,31 @@ export default function ProductDetailWithImages() {
       try {
         setLoading(true);
         const response = await api.get(`/products/${id}/with-images`);
-        setProduct(response.data.data);
-        setCurrentPrice(response.data.data.price);
-        setCurrentStock(response.data.data.stock);
-        setCurrentImages(response.data.data.images || []);
+        const dbProduct = response.data.data;
+
+        // **CRITICAL FIX**: Inject local asset images to prevent Supabase timeouts for known products
+        const matchingStatic = products.find(sp =>
+          sp.name && dbProduct.name && sp.name.toLowerCase().trim() === dbProduct.name.toLowerCase().trim()
+        );
+
+        let initialImages = dbProduct.images || [];
+
+        if (matchingStatic && matchingStatic.images && matchingStatic.images.length > 0) {
+          // Convert the string array to the ProductImage interface format
+          initialImages = matchingStatic.images.map((imgUrl, idx) => ({
+            id: -idx, // Temporary negative ID to satisfy type
+            image_url: imgUrl,
+            alt_text: matchingStatic.name,
+            image_order: idx,
+            is_thumbnail: idx === 0
+          }));
+          dbProduct.images = initialImages;
+        }
+
+        setProduct(dbProduct);
+        setCurrentPrice(dbProduct.price);
+        setCurrentStock(dbProduct.stock);
+        setCurrentImages(initialImages);
 
         // Fetch featured reviews
         try {
@@ -174,7 +196,7 @@ export default function ProductDetailWithImages() {
     setCurrentPrice(variant.price);
     setCurrentStock(variant.stock);
     setQuantity(1); // Reset quantity when changing variant
-    
+
     // Update images if variant has ML-specific images
     if (variant.images && variant.images.length > 0) {
       setCurrentImages(variant.images);
@@ -270,11 +292,10 @@ export default function ProductDetailWithImages() {
                       <button
                         key={variant.id}
                         onClick={() => handleVariantChange(variant)}
-                        className={`p-3 border-2 rounded-lg transition font-medium ${
-                          selectedVariant?.id === variant.id
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-input hover:border-primary"
-                        }`}
+                        className={`p-3 border-2 rounded-lg transition font-medium ${selectedVariant?.id === variant.id
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-input hover:border-primary"
+                          }`}
                       >
                         {variant.ml}
                         {variant.unit}
@@ -427,11 +448,10 @@ export default function ProductDetailWithImages() {
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star
                         key={i}
-                        className={`h-4 w-4 ${
-                          i < review.rating
-                            ? "fill-orange-400 text-orange-400"
-                            : "text-gray-300"
-                        }`}
+                        className={`h-4 w-4 ${i < review.rating
+                          ? "fill-orange-400 text-orange-400"
+                          : "text-gray-300"
+                          }`}
                       />
                     ))}
                   </div>
