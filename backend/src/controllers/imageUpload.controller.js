@@ -107,6 +107,7 @@ exports.uploadProductImages = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Upload images error: ${error.message}`);
+    console.error("SUPABASE STORAGE ERROR:", error);
     return res.status(500).json({
       status: 'error',
       message: error.message || 'Error uploading images'
@@ -205,8 +206,9 @@ exports.uploadTempImages = async (req, res) => {
 
     return res.status(201).json({ status: 'success', data: { images: uploaded } });
   } catch (error) {
-    console.error('uploadTempImages error:', error);
-    return res.status(500).json({ status: 'error', message: 'Failed to upload images' });
+    logger.error('uploadTempImages error:', error);
+    console.error("SUPABASE STORAGE ERROR:", error);
+    return res.status(500).json({ status: 'error', message: error.message || 'Failed to upload images' });
   }
 };
 

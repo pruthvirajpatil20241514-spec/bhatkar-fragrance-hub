@@ -1,7 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
 
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('❌ Supabase configuration missing in .env');
+if (!process.env.SUPABASE_URL) {
+    console.error('❌ SUPABASE_URL is missing in .env');
+}
+
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('❌ SUPABASE_SERVICE_ROLE_KEY is missing in .env');
+} else if (!process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('eyJ')) {
+    console.error('⚠️  SUPABASE_SERVICE_ROLE_KEY does not appear to be a service role key. It should start with "eyJ".');
 }
 
 const supabase = createClient(
