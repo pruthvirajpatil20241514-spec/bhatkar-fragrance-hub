@@ -17,11 +17,9 @@ const { logger } = require('../utils/logger');
  */
 exports.createOrder = async (req, res) => {
   try {
-    const { productId: rawProductId, quantity = 1, contact = null } = req.body;
-    const productId = Number(rawProductId);
+    const { items, contact = null } = req.body;
 
     // Require userId from authenticated middleware (auth)
-    // Guest checkout is no longer allowed due to strict PostgreSQL foreign key constraints
     const userId = req.user?.id;
     console.log(`👤 Auth Check - User from token: ${userId || 'MISSING'}`);
 
@@ -29,22 +27,14 @@ exports.createOrder = async (req, res) => {
       return res.status(401).json({ success: false, error: 'Unauthorized: You must be logged in to create an order' });
     }
 
-    console.log('📋 Processing create-order request:');
-    console.log(`   productId: ${productId}`);
-    console.log(`   userId: ${userId}`);
-    console.log(`   quantity: ${quantity}`);
-
-    // Validate inputs
-    if (!productId || isNaN(productId)) {
-      return res.status(400).json({ success: false, error: 'Product ID is required and must be a number' });
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'Cart items are required' });
     }
 
-    if (quantity < 1 || quantity > 100) {
-      return res.status(400).json({ success: false, error: 'Quantity must be between 1 and 100' });
-    }
+    console.log('📋 Processing multi-item order request:', items);
 
-    // Create order; userId may be null for guest checkout
-    const result = await paymentService.createOrder(userId, productId, quantity, contact);
+    // Create order
+    const result = await paymentService.createOrder(userId, items, contact);
 
     return res.status(200).json(result);
   } catch (error) {

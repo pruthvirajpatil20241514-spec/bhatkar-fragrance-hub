@@ -145,8 +145,8 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
                         else if (img && typeof img === 'object' && img.image_url) url = img.image_url;
                         else return '/images/fallback/perfume1.svg';
 
-                        // MASTER FIX: Try direct public URL if configured, fallback to proxy handled by SafeImage
-                        return toImageUrl(url, false); // false = use direct public URL
+                        // MASTER FIX: Prioritize PROXY because Direct Supabase is timing out for the user
+                        return toImageUrl(url, true); // true = use backend proxy for stability
                     });
                 }
 

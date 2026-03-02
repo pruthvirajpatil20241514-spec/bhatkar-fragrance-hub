@@ -18,76 +18,85 @@ class PaymentService {
    * - Create Razorpay order
    * - Save order in database with PENDING status
    */
-  async createOrder(userId, productId, quantity = 1, contact = null) {
+  async createOrder(userId, items, contact = null) {
     const conn = await db.getConnection();
 
     try {
-      // PostgreSQL: No explicit transaction needed for single inserts if not complex, 
-      // but keeping for consistency with original logic.
       await conn.query('BEGIN');
 
-      // 1. Verify user exists (PostgreSQL foreign key dependency)
+      // 1. Verify user exists
       const userCheck = await conn.query('SELECT id FROM users WHERE id = $1', [userId]);
       if (!userCheck.rows || userCheck.rows.length === 0) {
-        throw new Error(`User with ID ${userId} not found in database records.`);
+        throw new Error(`User with ID ${userId} not found.`);
       }
 
-      // 2. Fetch product price from database (NEVER from frontend)
-      const queryResult = await conn.query(
-        'SELECT id, name, price, is_active FROM products WHERE id = $1 AND COALESCE(is_active, true) = true',
-        [productId]
-      );
+      let totalAmount = 0;
+      const validatedItems = [];
 
-      console.log(`🔍 Payment product lookup: ID=${productId}, found=${queryResult.rows.length}`, queryResult.rows);
+      // 2. Fetch prices for ALL items and calculate total
+      for (const item of items) {
+        const { productId, quantity } = item;
+        const queryResult = await conn.query(
+          'SELECT id, name, price, is_active FROM products WHERE id = $1 AND COALESCE(is_active, true) = true',
+          [productId]
+        );
 
-      const productRows = queryResult.rows;
+        if (!queryResult.rows || queryResult.rows.length === 0) {
+          throw new Error(`Product ${productId} not found or inactive`);
+        }
 
-      if (!productRows || productRows.length === 0) {
-        throw new Error('Product not found or inactive');
+        const product = queryResult.rows[0];
+        const unitPrice = Number(product.price);
+        const itemTotal = unitPrice * quantity;
+        totalAmount += itemTotal;
+
+        validatedItems.push({
+          productId,
+          name: product.name,
+          quantity,
+          price: unitPrice,
+          total: itemTotal
+        });
       }
 
-      const product = productRows[0];
-      const unitPrice = Number(product.price);
-      const totalAmount = unitPrice * quantity;
+      // Add 10% tax (matching frontend logic)
+      const finalAmount = totalAmount * 1.1;
 
-      // Validate amount
-      if (totalAmount <= 0 || totalAmount > 1000000) {
+      if (finalAmount <= 0 || finalAmount > 1000000) {
         throw new Error('Invalid order amount');
       }
 
-      // 3. Create Razorpay order (amount in paise)
+      // 3. Create Razorpay order
       const razorpayOrder = await razorpay.orders.create({
-        amount: Math.round(totalAmount * 100), // Convert to paise
+        amount: Math.round(finalAmount * 100), // Convert to paise
         currency: 'INR',
-        receipt: `order_${Date.now()}_${userId}_${productId}`,
-        payment_capture: 1, // Auto-capture payment
+        receipt: `order_${Date.now()}_${userId}`,
+        payment_capture: 1,
         notes: Object.assign({
           userId,
-          productId,
-          productName: product.name
+          itemCount: items.length
         }, contact ? { contact } : {})
       });
 
-      // 4. Save order in database
-      // Using RETURNING * to get the SERIAL id
+      // 4. Save order in database with items_json
       const orderInsertResult = await conn.query(
-        `INSERT INTO orders (user_id, product_id, quantity, total_amount, razorpay_order_id, status, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *`,
-        [userId, productId, quantity, totalAmount, razorpayOrder.id, 'PENDING']
+        `INSERT INTO orders (user_id, total_amount, razorpay_order_id, status, items_json, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
+        [userId, finalAmount, razorpayOrder.id, 'PENDING', JSON.stringify(validatedItems)]
       );
 
       await conn.query('COMMIT');
 
       const orderId = orderInsertResult.rows[0].id;
-      logger.info(`✅ Order created - Order ID: ${orderId}, Razorpay: ${razorpayOrder.id}, Amount: ₹${totalAmount}`);
+      logger.info(`✅ Multi-item Order created - Order ID: ${orderId}, Razorpay: ${razorpayOrder.id}, Items: ${items.length}`);
 
       return {
         success: true,
         orderId: orderId,
         razorpayOrderId: razorpayOrder.id,
-        amount: totalAmount,
+        amount: finalAmount,
         currency: 'INR',
-        productName: product.name
+        productName: items.length > 1 ? `${items.length} items` : validatedItems[0].name
       };
     } catch (error) {
       await conn.query('ROLLBACK');

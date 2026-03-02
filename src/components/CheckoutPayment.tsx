@@ -75,18 +75,14 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
       }
       console.log('✅ Razorpay script loaded');
 
-      // 2. Create order on backend using first item (backend will calculate total)
-      const mainItem = items[0];
-      if (!mainItem) {
-        throw new Error('Cart is empty - no items to purchase');
-      }
-
-      console.log(`🔄 Creating order for product ${mainItem.productId}, quantity ${mainItem.quantity}...`);
+      console.log(`🔄 Creating order for ${items.length} items...`);
       console.log(`📡 API Base URL: ${import.meta.env.VITE_API_BASE_URL}`);
 
       const orderResponse = await api.post('/payment/create-order', {
-        productId: mainItem.productId,
-        quantity: mainItem.quantity,
+        items: items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity
+        })),
         contact: prefillContact || null
       });
 
@@ -214,11 +210,11 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
   return (
     <div className="checkout-payment">
       {error && (
-        <div className="alert alert-danger" role="alert" style={{ 
-          padding: '12px', 
-          marginBottom: '16px', 
-          backgroundColor: '#fee', 
-          border: '1px solid #fcc', 
+        <div className="alert alert-danger" role="alert" style={{
+          padding: '12px',
+          marginBottom: '16px',
+          backgroundColor: '#fee',
+          border: '1px solid #fcc',
           borderRadius: '4px',
           color: '#c33'
         }}>
