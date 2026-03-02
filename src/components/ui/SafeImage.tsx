@@ -4,6 +4,9 @@ import React, { useState } from 'react';
 const INLINE_FALLBACK =
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f3f0eb'/%3E%3Ccircle cx='200' cy='150' r='60' fill='%23d4a96a' opacity='0.4'/%3E%3Crect x='160' y='210' width='80' height='110' rx='8' fill='%23d4a96a' opacity='0.5'/%3E%3Ctext x='200' y='360' text-anchor='middle' font-family='Georgia' font-size='16' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E";
 
+// Primary local fallback – relative path to public folder
+const LOCAL_FALLBACK = "/images/product-placeholder.svg";
+
 interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
     src: string | undefined | null;
     fallback?: string;
@@ -15,7 +18,7 @@ interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
  * SafeImage – A robust image component that:
  * 1. Accepts any URL including Supabase Storage public URLs
  * 2. Shows a skeleton shimmer while loading
- * 3. Falls back to an inline SVG placeholder if loading fails (no external request needed)
+ * 3. Falls back to an inline SVG placeholder if loading fails
  * 4. Prevents infinite fallback loops
  */
 const SafeImage: React.FC<SafeImageProps> = ({
@@ -27,17 +30,27 @@ const SafeImage: React.FC<SafeImageProps> = ({
     style,
     ...rest
 }) => {
-    const [imgSrc, setImgSrc] = useState<string>(src || fallback);
+    // Initial source logic: if it doesn't look like a URL and isn't a relative path, use fallback
+    const getInitialSrc = () => {
+        if (!src) return fallback;
+        if (typeof src !== 'string') return fallback;
+        // If it's a Supabase URL that doesn't start with https (safety check), use fallback
+        if (src.includes('supabase.co') && !src.startsWith('https')) return LOCAL_FALLBACK;
+        return src;
+    };
+
+    const [imgSrc, setImgSrc] = useState<string>(getInitialSrc());
     const [loaded, setLoaded] = useState(false);
     const [errored, setErrored] = useState(false);
+    const [attemptedLocal, setAttemptedLocal] = useState(false);
 
-    // When src prop changes (e.g. product navigation), reset state
+    // When src prop changes, reset state
     React.useEffect(() => {
-        if (src && src !== imgSrc) {
-            setImgSrc(src);
-            setLoaded(false);
-            setErrored(false);
-        }
+        const newSrc = getInitialSrc();
+        setImgSrc(newSrc);
+        setLoaded(false);
+        setErrored(false);
+        setAttemptedLocal(false);
     }, [src]);
 
     const handleLoad = () => {
@@ -47,10 +60,16 @@ const SafeImage: React.FC<SafeImageProps> = ({
     };
 
     const handleError = () => {
-        if (errored) return; // prevent infinite loop
-        setErrored(true);
-        setImgSrc(fallback);
-        setLoaded(true);
+        if (!attemptedLocal && imgSrc !== LOCAL_FALLBACK) {
+            // First try the local fallback image
+            setImgSrc(LOCAL_FALLBACK);
+            setAttemptedLocal(true);
+        } else if (!errored) {
+            // If local fallback also fails, use the inline SVG
+            setErrored(true);
+            setImgSrc(fallback);
+            setLoaded(true);
+        }
     };
 
     return (

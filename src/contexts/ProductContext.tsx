@@ -60,35 +60,33 @@ interface ProductContextType {
 
 const ProductContext = createContext<ProductContextType | null>(null);
 
+// ── Read cache synchronously before first render ──────────────────────────────
+function readProductCache(): NormalizedProduct[] {
+    try {
+        const raw = localStorage.getItem("products_cache");
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
 export function ProductProvider({ children }: { children: React.ReactNode }) {
-    const [products, setProducts] = useState<NormalizedProduct[]>([]);
-    const [loading, setLoading] = useState(true);
+    const cachedOnMount = readProductCache();
+
+    // If cache has data → loading is false immediately, no skeleton flash
+    const [products, setProducts] = useState<NormalizedProduct[]>(cachedOnMount);
+    const [loading, setLoading] = useState(cachedOnMount.length === 0); // true only if cache is empty
     const [error, setError] = useState<string | null>(null);
 
-    // Initial load: Hydrate from cache instantly, then refresh silently
+    // Initial load: cache is already in state; just silently refresh from network
     useEffect(() => {
         let mounted = true;
 
         const initializeStore = async () => {
-            // 1. Instant Cache Hydration
-            try {
-                const cachedStr = localStorage.getItem("products_cache");
-                if (cachedStr) {
-                    const cachedProducts = JSON.parse(cachedStr);
-                    if (Array.isArray(cachedProducts) && cachedProducts.length > 0) {
-                        if (mounted) {
-                            setProducts(cachedProducts);
-                            setLoading(false); // UI renders immediately
-                            console.log(`📦 [Cache] Instantly loaded ${cachedProducts.length} products`);
-                        }
-                    }
-                }
-            } catch (err) {
-                console.warn("Failed to parse local product cache:", err);
-            }
-
-            // 2. Silent Network Refresh
-            await fetchProducts(true);
+            // Background network refresh (cache already shown above)
+            await fetchProducts(true, mounted, () => mounted);
         };
 
         initializeStore();
@@ -98,7 +96,7 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
-    const fetchProducts = async (isBackground = false) => {
+    const fetchProducts = async (isBackground = false, _mounted = true, isMounted?: () => boolean) => {
         if (!isBackground) {
             setLoading(true);
         }
@@ -141,12 +139,17 @@ export function ProductProvider({ children }: { children: React.ReactNode }) {
                 return normalized as NormalizedProduct;
             });
 
-            // Update state
-            setProducts(normalizedProducts);
+            // 4. Update state & cache only if changed (prevents unnecessary re-renders)
+            const currentCacheStr = localStorage.getItem("products_cache");
+            const newCacheStr = JSON.stringify(normalizedProducts);
 
-            // Update Cache
-            localStorage.setItem("products_cache", JSON.stringify(normalizedProducts));
-            console.log(`✅ [Network] Refreshed & cached ${normalizedProducts.length} products`);
+            if (currentCacheStr !== newCacheStr) {
+                setProducts(normalizedProducts);
+                localStorage.setItem("products_cache", newCacheStr);
+                console.log(`✅ [Network] Refreshed & updated ${normalizedProducts.length} products`);
+            } else {
+                console.log('ℹ️ [Network] Data unchanged, skipping state update');
+            }
 
         } catch (err: any) {
             console.error('❌ [Network] Fetch failed:', err);

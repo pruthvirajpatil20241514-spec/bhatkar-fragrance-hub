@@ -402,7 +402,21 @@ export default function Shop() {
 
             {/* Products Grid */}
             <div className="flex-1">
-              {filteredProducts.length === 0 ? (
+              {productsLoading && filteredProducts.length === 0 ? (
+                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="bg-card rounded-lg overflow-hidden shadow-soft animate-pulse">
+                      <div className="aspect-[3/4] bg-secondary" />
+                      <div className="p-4 space-y-3">
+                        <div className="h-4 bg-secondary rounded w-1/3" />
+                        <div className="h-6 bg-secondary rounded w-3/4" />
+                        <div className="h-4 bg-secondary rounded w-1/2" />
+                        <div className="h-8 bg-secondary rounded w-full mt-4" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredProducts.length === 0 ? (
                 <div className="text-center py-20">
                   <p className="text-muted-foreground text-lg mb-4">
                     No products found matching your criteria
