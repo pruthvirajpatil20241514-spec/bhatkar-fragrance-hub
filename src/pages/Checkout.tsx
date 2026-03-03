@@ -71,6 +71,7 @@ export default function Checkout() {
   const validateShippingInfo = () => {
     if (
       !formData.email ||
+      !formData.phone ||
       !formData.firstName ||
       !formData.lastName ||
       !formData.address ||
@@ -194,6 +195,7 @@ export default function Checkout() {
                         value={formData.phone}
                         onChange={handleInputChange}
                         className="text-sm sm:text-base"
+                        required
                       />
                     </div>
                   </div>

@@ -41,6 +41,7 @@ interface ProductCardProps {
 }
 
 function isStaticProduct(product: any): product is Product {
+  if (!product) return false;
   return 'fragranceType' in product && 'sizes' in product;
 }
 
@@ -49,6 +50,9 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const { addItem } = useCart();
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+
+  if (!product) return null;
+
   const isWishlisted = isInWishlist(String(product.id));
 
   const isStatic = isStaticProduct(product);
@@ -56,8 +60,8 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     ? // static products store simple image strings
     (product as Product).images && (product as Product).images.length ? (product as Product).images[0] : '/images/fallback/perfume1.svg'
     : getProductImageWithFallback((product as DatabaseProduct).images, '/images/fallback/perfume1.svg');
-  const productPrice = product.price;
-  const productName = product.name;
+  const productPrice = product?.price || 0;
+  const productName = product?.name || 'Unknown Product';
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();

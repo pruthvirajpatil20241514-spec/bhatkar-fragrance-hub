@@ -53,8 +53,8 @@ export default function Wishlist() {
                   transition={{ duration: 0.6, delay: 0.1 }}
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
                 >
-                  {items.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                  {items.map((product, idx) => (
+                    product ? <ProductCard key={product?.id || idx} product={product} /> : null
                   ))}
                 </motion.div>
 
