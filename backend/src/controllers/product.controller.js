@@ -185,26 +185,61 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
     try {
         const { id } = req.params;
+        const db = require('../config/db');
 
-        const data = await Product.delete(id);
-        logger.info(`Product deleted: ${id}`);
-        return res.status(200).send({
-            status: 'success',
-            message: 'Product deleted successfully',
-            data: data
-        });
-    } catch (error) {
-        if (error.kind === 'not_found') {
-            logger.warn(`Product not found for delete: ${req.params.id}`);
-            return res.status(404).send({
-                status: 'error',
-                message: `Product with id ${req.params.id} not found`
+        // Start transaction to delete related records
+        const client = await db.connect();
+        try {
+            await client.query('BEGIN');
+
+            // Delete product images
+            await client.query('DELETE FROM product_images WHERE product_id = $1', [id]);
+            
+            // Delete product variants
+            await client.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
+            
+            // Delete variant images
+            await client.query(
+                'DELETE FROM product_variant_images WHERE variant_id IN (SELECT id FROM product_variants WHERE product_id = $1)',
+                [id]
+            );
+            
+            // Delete reviews
+            await client.query('DELETE FROM reviews WHERE product_id = $1', [id]);
+            
+            // Delete orders (related to this product)
+            await client.query('DELETE FROM orders WHERE product_id = $1', [id]);
+
+            // Finally delete the product
+            const result = await client.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
+
+            if (result.rows.length === 0) {
+                await client.query('ROLLBACK');
+                logger.warn(`Product not found for delete: ${id}`);
+                return res.status(404).send({
+                    status: 'error',
+                    message: `Product with id ${id} not found`
+                });
+            }
+
+            await client.query('COMMIT');
+            logger.info(`Product deleted with all related records: ${id}`);
+            return res.status(200).send({
+                status: 'success',
+                message: 'Product deleted successfully',
+                data: result.rows[0]
             });
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
         }
+    } catch (error) {
         logger.error(`Delete product error: ${error.message}`);
         return res.status(500).send({
             status: 'error',
-            message: 'Internal server error.'
+            message: error.message || 'Failed to delete product'
         });
     }
 };

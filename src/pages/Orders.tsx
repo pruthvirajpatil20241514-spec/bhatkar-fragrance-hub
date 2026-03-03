@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, Package, Download, Eye, Loader2 } from "lucide-react";
+import { ArrowLeft, Package, Download, Loader2 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Layout } from "@/components/layout/Layout";
@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatPrice } from "@/lib/utils";
 import api from "@/lib/axios";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface OrderItem {
   id: string;
@@ -25,6 +27,16 @@ interface Order {
   status: string;
   items: OrderItem[];
   trackingNumber?: string;
+  customerEmail?: string;
+  firstName?: string;
+  lastName?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  phone?: string;
+  raw_order?: any;
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -40,6 +52,8 @@ export default function Orders() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const invoiceRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -65,7 +79,17 @@ export default function Orders() {
               image: o.product_images && o.product_images[0]?.image_url
             }
           ],
-          trackingNumber: o.razorpay_order_id // Using RP order ID as tracking for now
+          trackingNumber: o.razorpay_order_id,
+          customerEmail: o.customer_email,
+          firstName: o.firstName,
+          lastName: o.lastName,
+          address: o.address,
+          city: o.city,
+          state: o.state,
+          postal_code: o.postal_code,
+          country: o.country,
+          phone: o.phone,
+          raw_order: o
         }));
 
         setOrders(mappedOrders);
@@ -79,6 +103,56 @@ export default function Orders() {
 
     fetchOrders();
   }, [isAuthenticated]);
+
+  const handleDownloadInvoice = async (order: Order) => {
+    try {
+      setDownloadingId(order.id);
+      const invoiceElement = invoiceRefs.current[order.id];
+      
+      if (!invoiceElement) {
+        toast.error("Invoice template not found");
+        return;
+      }
+
+      // Generate PDF from invoice HTML
+      const canvas = await html2canvas(invoiceElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff"
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+
+      // Add additional pages if content is longer
+      let heightLeft = imgHeight - 297; // A4 height in mm
+      let position = 0;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= 297;
+      }
+
+      pdf.save(`invoice-${order.id}.pdf`);
+      toast.success("Invoice downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading invoice:", error);
+      toast.error("Failed to download invoice");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   if (authLoading) {
     return (
@@ -187,16 +261,120 @@ export default function Orders() {
 
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border/50">
-                      <Button variant="outline" className="gap-2" asChild>
-                        <Link to="/checkout" state={{ orderId: order.id }}>
-                          <Eye className="h-4 w-4" />
-                          View Details
-                        </Link>
-                      </Button>
-                      <Button variant="outline" className="gap-2" disabled>
+                      <Button 
+                        variant="outline" 
+                        className="gap-2" 
+                        onClick={() => handleDownloadInvoice(order)}
+                        disabled={downloadingId === order.id}
+                      >
                         <Download className="h-4 w-4" />
-                        Download Invoice
+                        {downloadingId === order.id ? "Generating..." : "Download Invoice"}
                       </Button>
+                    </div>
+
+                    {/* Hidden Invoice Template for PDF Generation */}
+                    <div 
+                      ref={(el) => { invoiceRefs.current[order.id] = el; }}
+                      style={{ display: "none" }}
+                      className="p-8 bg-white text-black"
+                    >
+                      <div className="space-y-6">
+                        {/* Header */}
+                        <div className="border-b pb-6">
+                          <h1 className="text-3xl font-bold mb-2">INVOICE</h1>
+                          <p className="text-gray-600">{order.id}</p>
+                        </div>
+
+                        {/* Company Info & Invoice Details */}
+                        <div className="grid grid-cols-2 gap-8">
+                          <div>
+                            <h3 className="font-bold text-sm mb-2">FROM:</h3>
+                            <p className="font-bold">Bhatkar & Co</p>
+                            <p className="text-sm text-gray-600">Fine Perfumery</p>
+                            <p className="text-sm text-gray-600">R102, Moregaon 90 Feet Road</p>
+                            <p className="text-sm text-gray-600">Nalasopara East, Mumbai – 401209</p>
+                            <p className="text-sm text-gray-600">Maharashtra, India</p>
+                            <p className="text-sm text-gray-600 mt-2">+91 98765 43210</p>
+                            <p className="text-sm text-gray-600">info@bhatkarcco.com</p>
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-sm mb-2">BILL TO:</h3>
+                            <p className="font-bold">{order.firstName} {order.lastName}</p>
+                            <p className="text-sm text-gray-600">{order.address}</p>
+                            <p className="text-sm text-gray-600">{order.city}, {order.state} {order.postal_code}</p>
+                            <p className="text-sm text-gray-600">{order.country}</p>
+                            <p className="text-sm text-gray-600 mt-2">{order.phone}</p>
+                            <p className="text-sm text-gray-600">{order.customerEmail}</p>
+                          </div>
+                        </div>
+
+                        {/* Order Details */}
+                        <div className="grid grid-cols-2 gap-8 text-sm">
+                          <div>
+                            <p className="text-gray-600">Invoice Date:</p>
+                            <p className="font-bold">{new Date(order.date).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600">Order ID:</p>
+                            <p className="font-bold">{order.id}</p>
+                          </div>
+                        </div>
+
+                        {/* Items Table */}
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b-2 border-gray-800">
+                              <th className="text-left py-2 font-bold">Description</th>
+                              <th className="text-right py-2 font-bold">Quantity</th>
+                              <th className="text-right py-2 font-bold">Unit Price</th>
+                              <th className="text-right py-2 font-bold">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {order.items.map((item) => (
+                              <tr key={item.id} className="border-b border-gray-300">
+                                <td className="py-3">{item.name}</td>
+                                <td className="text-right">{item.quantity}</td>
+                                <td className="text-right">{formatPrice(item.price)}</td>
+                                <td className="text-right font-bold">{formatPrice(item.price * item.quantity)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+
+                        {/* Totals */}
+                        <div className="flex justify-end">
+                          <div className="w-64">
+                            <div className="flex justify-between py-2 border-t-2 border-gray-800">
+                              <span className="font-bold">Total Amount:</span>
+                              <span className="font-bold text-lg">{formatPrice(order.total)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Payment Status */}
+                        <div className="bg-gray-100 p-4 rounded">
+                          <h3 className="font-bold mb-2">Payment Status:</h3>
+                          <p className="text-sm">
+                            Status: <span className="font-bold uppercase">{order.status}</span>
+                          </p>
+                          {order.trackingNumber && (
+                            <p className="text-sm mt-1">
+                              Reference ID: <span className="font-bold">{order.trackingNumber}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="border-t pt-4 text-center text-xs text-gray-600">
+                          <p>Thank you for your purchase!</p>
+                          <p>If you have any questions, please contact us at info@bhatkarcco.com</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -481,8 +481,12 @@ export default function Products() {
       setError("");
       await api.delete(`/products/${id}`);
       await fetchProducts();
+      toast.success("Product deleted successfully!");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to delete product");
+      const errorMessage = err.response?.data?.message || "Failed to delete product";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      console.error("Delete error:", err);
     }
   };
 
