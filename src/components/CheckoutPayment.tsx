@@ -16,6 +16,7 @@ declare global {
 interface CheckoutPaymentProps {
   items: Array<{ productId: number; quantity: number; price: number }>;
   totalAmount: number;
+  prefillContact?: string;
   onSuccess?: (response: any) => void;
   onError?: (error: any) => void;
   buttonText?: string;
@@ -25,6 +26,7 @@ interface CheckoutPaymentProps {
 const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
   items,
   totalAmount,
+  prefillContact,
   onSuccess,
   onError,
   buttonText = 'Pay Now',
@@ -60,7 +62,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
   const [phoneInput, setPhoneInput] = useState('');
 
   // Core payment flow extracted to allow prefill collection first
-  const doPayment = useCallback(async (prefillContact: string | null) => {
+  const doPayment = useCallback(async (contactToUse: string | null) => {
     try {
       setLoading(true);
       setError(null);
@@ -83,7 +85,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
           productId: item.productId,
           quantity: item.quantity
         })),
-        contact: prefillContact || null
+        contact: contactToUse || null
       });
 
       console.log('📨 Order creation response:', orderResponse.status, orderResponse.data);
@@ -158,7 +160,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
         // Contact information - prefill from checkout form if available
         prefill: {
           email: localStorage.getItem('userEmail') || '',
-          contact: prefillContact || ''
+          contact: contactToUse || ''
         },
 
         // Theme
@@ -194,18 +196,23 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
   }, [items, totalAmount, loadRazorpayScript, onSuccess, onError]);
 
   const handlePayment = useCallback(() => {
-    // Check local saved phone first
+    // If phone is provided by parent component (from form), use it instantly
+    if (prefillContact) {
+      void doPayment(prefillContact);
+      return;
+    }
+
+    // Check local saved phone second
     const saved = localStorage.getItem('userPhone') || '';
     if (saved) {
-      // proceed immediately
       void doPayment(saved);
       return;
     }
 
-    // show modal to collect phone
+    // show modal to collect phone as last resort
     setPhoneInput('');
     setShowPhoneModal(true);
-  }, [doPayment]);
+  }, [doPayment, prefillContact]);
 
   return (
     <div className="checkout-payment">

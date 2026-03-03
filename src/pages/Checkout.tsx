@@ -346,6 +346,7 @@ export default function Checkout() {
                           price: item.selectedPrice
                         }))}
                         totalAmount={totalPrice * 1.1}
+                        prefillContact={formData.phone}
                         onSuccess={handlePaymentSuccess}
                         onError={handlePaymentError}
                         buttonText={`Pay ₹${formatPrice((totalPrice * 1.1))}`}
