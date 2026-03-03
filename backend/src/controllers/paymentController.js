@@ -31,17 +31,31 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Cart items are required' });
     }
 
-    console.log('📋 Processing multi-item order request:', items);
+    console.log('📋 Processing multi-item order request:', JSON.stringify(items));
 
     // Create order
     const result = await paymentService.createOrder(userId, items, contact);
 
+    console.log('✅ Order created successfully:', {
+      orderId: result.orderId,
+      razorpayOrderId: result.razorpayOrderId,
+      amount: result.amount,
+      currency: result.currency
+    });
+
     return res.status(200).json(result);
   } catch (error) {
+    console.error('❌ Error in createOrder:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      details: error
+    });
     logger.error('❌ Error in createOrder:', error.message);
     return res.status(400).json({
       success: false,
-      error: error.message
+      error: error.message,
+      type: error.constructor.name
     });
   }
 };
@@ -53,6 +67,12 @@ exports.createOrder = async (req, res) => {
 exports.verifyPayment = async (req, res) => {
   try {
     const { orderId, razorpay_payment_id, razorpay_signature } = req.body;
+
+    console.log('🔍 Verifying payment:', {
+      orderId,
+      paymentId: razorpay_payment_id ? '✅ Set' : '❌ Missing',
+      signature: razorpay_signature ? '✅ Set' : '❌ Missing'
+    });
 
     // Validate inputs
     if (!orderId || !razorpay_payment_id || !razorpay_signature) {
@@ -68,12 +88,23 @@ exports.verifyPayment = async (req, res) => {
       razorpay_signature
     );
 
+    console.log('✅ Payment verified successfully:', {
+      orderId: result.orderId,
+      paymentId: result.paymentId
+    });
+
     return res.status(200).json(result);
   } catch (error) {
+    console.error('❌ Error in verifyPayment:', {
+      message: error.message,
+      stack: error.stack,
+      orderId: req.body.orderId
+    });
     logger.error('❌ Error in verifyPayment:', error.message);
     return res.status(400).json({
       success: false,
-      error: error.message
+      error: error.message,
+      type: error.constructor.name
     });
   }
 };

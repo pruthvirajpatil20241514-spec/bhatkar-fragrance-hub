@@ -110,6 +110,28 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
 
       // 3. Open Razorpay checkout
       console.log('🎯 Opening Razorpay Checkout modal...');
+      
+      // Validate and prepare contact
+      let validContact = '';
+      if (contactToUse && contactToUse.trim()) {
+        // Remove any non-numeric characters
+        validContact = contactToUse.replace(/\D/g, '');
+        // Ensure it's at least 10 digits (Indian phone number)
+        if (validContact.length < 10) {
+          console.warn('⚠️ Contact too short, clearing it for Razorpay');
+          validContact = '';
+        }
+      }
+      
+      console.log('📋 Razorpay options:', {
+        key: razorpayKeyId ? 'SET' : 'MISSING',
+        amount: Math.round(amount * 100),
+        currency: 'INR',
+        order_id: razorpayOrderId,
+        contact: validContact ? '✅ Valid' : '⚠️ Empty',
+        email: localStorage.getItem('userEmail') ? '✅ Set' : '⚠️ Empty'
+      });
+      
       const options = {
         key: razorpayKeyId,  // ✅ Use key from backend (live key)
         amount: Math.round(amount * 100), // Convert to paise
@@ -149,7 +171,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
               throw new Error('Payment verification failed - ' + verifyResponse.data.error);
             }
           } catch (err: any) {
-            console.error('❌ Payment error:', err.message);
+            console.error('❌ Payment verification error:', err.message);
             setError(err.message || 'Payment verification failed');
             if (onError) {
               onError(err);
@@ -159,17 +181,18 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
           }
         },
 
-        // Error handler
+        // Error handler - Called when Razorpay modal is dismissed or error occurs
         modal: {
           ondismiss: () => {
-            setError('Payment cancelled');
+            console.log('⚠️ Razorpay modal dismissed by user');
+            setError('Payment cancelled by user');
           }
         },
 
         // Contact information - prefill from checkout form if available
         prefill: {
           email: localStorage.getItem('userEmail') || '',
-          contact: contactToUse || ''
+          contact: validContact  // Only send if valid
         },
 
         // Theme
@@ -184,15 +207,31 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
         }
       };
 
+      console.log('🔧 Initializing Razorpay with options');
       const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      
+      console.log('📤 Calling razorpay.open()...');
+      
+      // Wrap open() call in try-catch in case Razorpay SDK throws
+      try {
+        razorpay.open();
+        console.log('✅ Razorpay modal opened successfully');
+      } catch (razorpayError: any) {
+        console.error('❌ Razorpay.open() threw error:', {
+          message: razorpayError.message,
+          error: razorpayError
+        });
+        throw razorpayError;
+      }
+
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error || err.message || 'Payment failed';
+      const errorMessage = err.response?.data?.error || err.message || 'Payment initialization failed';
       console.error('❌ Payment initialization error:', {
         message: errorMessage,
         status: err.response?.status,
         url: err.response?.config?.url,
         method: err.response?.config?.method,
+        errorType: err.constructor.name,
         fullError: err
       });
       setError(errorMessage);
