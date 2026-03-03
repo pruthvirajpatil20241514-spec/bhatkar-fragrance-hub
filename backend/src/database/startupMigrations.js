@@ -333,6 +333,7 @@ async function createOrderItemsTable(db, loggerUtil) {
     }
 
     loggerUtil.info('  Creating order_items table...');
+    // PostgreSQL syntax - no INDEX in CREATE TABLE
     await db.query(`
       CREATE TABLE order_items (
         id SERIAL PRIMARY KEY,
@@ -344,14 +345,15 @@ async function createOrderItemsTable(db, loggerUtil) {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
-        
-        INDEX idx_order_id (order_id),
-        INDEX idx_product_id (product_id)
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
       )
     `);
 
-    loggerUtil.info('  ✅ Created order_items table');
+    // Create indexes separately (PostgreSQL way)
+    await db.query('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)');
+    await db.query('CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id)');
+
+    loggerUtil.info('  ✅ Created order_items table with indexes');
 
   } catch (error) {
     loggerUtil.warn('  ⚠️ Could not create order_items table:', error.message);
