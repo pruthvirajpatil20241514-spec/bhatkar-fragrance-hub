@@ -348,9 +348,9 @@ export default function Products() {
                     },
                   });
 
-                  const uploadedImages = uploadResponse.data.data || [];
+                  const uploadedImages = uploadResponse.data.data?.images || [];
                   if (uploadedImages.length > 0) {
-                    finalUrl = uploadedImages[0].imageUrl;
+                    finalUrl = uploadedImages[0].image_url;
                     console.log(`✅ Image uploaded to Railway: ${finalUrl}`);
                   }
                 } catch (uploadErr: any) {
@@ -544,11 +544,11 @@ export default function Products() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const uploaded = uploadResp.data.data || [];
+      const uploaded = uploadResp.data.data?.images || [];
       if (uploaded.length === 0) throw new Error('No images returned from upload');
 
       // Save uploaded URLs to variant_images via API
-      const imagesPayload = uploaded.map((img: any) => ({ image_url: img.imageUrl, alt_text: img.alt_text || 'Variant image' }));
+      const imagesPayload = uploaded.map((img: any) => ({ image_url: img.image_url, alt_text: img.alt_text || 'Variant image' }));
       await api.post(`/variants/${variantId}/images`, { images: imagesPayload });
 
       await loadProductVariants(editingId);
@@ -1364,9 +1364,9 @@ function ImageUploadForm({
 
         console.log("✅ Upload response:", response.data);
 
-        const uploadedImages = response.data.data || [];
+        const uploadedImages = response.data.data?.images || [];
         if (uploadedImages.length > 0) {
-          const imageUrl = uploadedImages[0].imageUrl;
+          const imageUrl = uploadedImages[0].image_url;
           console.log("✅ Image URL from Railway:", imageUrl);
           onAdd(imageUrl, altText || "Product image");
           toast.success("Image uploaded to Railway Storage successfully!");
