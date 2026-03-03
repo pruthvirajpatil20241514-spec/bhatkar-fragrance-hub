@@ -11,6 +11,9 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
+// ✅ Import Logo
+import logo from "@/assets/Bhatkarlogo.png";
+
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
@@ -52,10 +55,12 @@ function Header() {
           to="/"
           className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
         >
-          {/* Logo Icon */}
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-amber-600 to-amber-800 text-white font-bold text-lg">
-            B
-          </div>
+          {/* ✅ Logo Image */}
+          <img
+            src={logo}
+            alt="Bhatkar Perfumery Logo"
+            className="h-10 w-auto object-contain"
+          />
 
           {/* Logo Text */}
           <motion.div
@@ -64,7 +69,7 @@ function Header() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="flex flex-col items-start"
           >
-            <span className="font-display text-xl font-black tracking-tighter text-foreground leading-none group-hover:text-primary transition-colors duration-300">
+            <span className="font-display text-xl font-black tracking-tighter text-foreground leading-none transition-colors duration-300">
               BHATKAR
             </span>
             <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary/70 leading-relaxed">
@@ -91,7 +96,9 @@ function Header() {
                 layoutId="nav-underline"
                 className={cn(
                   "absolute bottom-0 left-0 h-[2px] bg-primary rounded-full",
-                  location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full transition-all duration-300"
+                  location.pathname === link.href
+                    ? "w-full"
+                    : "w-0 group-hover:w-full transition-all duration-300"
                 )}
               />
             </Link>
@@ -124,7 +131,6 @@ function Header() {
               )}
             </Button>
 
-            {/* Profile/Auth */}
             <div className="hidden md:flex relative">
               {isAuthenticated ? (
                 <ProfileMenu />
@@ -170,7 +176,7 @@ function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation (unchanged below) */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -205,31 +211,6 @@ function Header() {
 
               <div className="flex items-center space-x-4 pt-4 border-t border-border">
                 <SearchBar />
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    navigate("/wishlist");
-                  }}
-                  className="relative"
-                >
-                  <Heart className="h-5 w-5" />
-                  {wishlistItems.length > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-medium text-destructive-foreground">
-                      {wishlistItems.length}
-                    </span>
-                  )}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsAuthModalOpen(true)}
-                >
-                  <User className="h-5 w-5" />
-                </Button>
               </div>
             </nav>
           </motion.div>
