@@ -93,8 +93,16 @@ exports.verifyPayment = async (req, res) => {
       paymentId: result.paymentId
     });
 
+    // If service returned a friendly message about already-paid order, still
+    // use 200 status so frontend treats it as success
     return res.status(200).json(result);
   } catch (error) {
+    // if an already-paid error somehow bubbles up, transform to success response
+    if (error.message && error.message.toLowerCase().includes('already paid')) {
+      console.warn('Client attempted to verify an already-paid order, sending success');
+      return res.status(200).json({ success: true, message: 'Order already paid' });
+    }
+
     console.error('❌ Error in verifyPayment:', {
       message: error.message,
       stack: error.stack,

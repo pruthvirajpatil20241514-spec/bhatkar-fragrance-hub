@@ -147,7 +147,16 @@ class PaymentService {
 
       // 2. Prevent duplicate payment verification
       if (order.status === 'PAID') {
-        throw new Error('Order already paid');
+        // Gracefully return success when the same order is verified multiple
+        // times (e.g. frontend retries, user refreshes after completing
+        // payment). This prevents 400 errors on the client despite the
+        // payment being valid.
+        logger.warn(`✨ verifyPayment called on already-paid order ${orderId}`);
+        return {
+          success: true,
+          message: 'Order already paid',
+          orderId
+        };
       }
 
       if (order.status === 'FAILED') {

@@ -65,6 +65,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
   const doPayment = useCallback(async (contactToUse: string | null) => {
     try {
       setLoading(true);
+      // Clear any previous errors immediately when starting payment
       setError(null);
 
       console.log('🛒 Starting payment process...');
@@ -144,9 +145,11 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
         handler: async (response: any) => {
           try {
             setLoading(true);
+            // Clear any previous errors immediately when payment succeeds on Razorpay
+            setError(null);
 
             // 4. Verify payment on backend
-            console.log('💳 Payment successful, verifying on backend...');
+            console.log('💳 Payment successful on Razorpay, verifying on backend...');
             console.log('Payment ID:', response.razorpay_payment_id);
 
             const verifyResponse = await api.post('/payment/verify', {
@@ -159,7 +162,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
 
             if (verifyResponse.data.success) {
               console.log('🎉 Payment verified successfully! Order:', orderId);
-              // Payment successful
+              // Payment successful - call success callback immediately
               if (onSuccess) {
                 onSuccess({
                   orderId,
@@ -167,12 +170,16 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
                   amount
                 });
               }
+              // Clear error state to ensure success is processed completely
+              setError(null);
             } else {
-              throw new Error('Payment verification failed - ' + verifyResponse.data.error);
+              const verifyError = 'Payment verification failed - ' + verifyResponse.data.error;
+              throw new Error(verifyError);
             }
           } catch (err: any) {
             console.error('❌ Payment verification error:', err.message);
-            setError(err.message || 'Payment verification failed');
+            const errorMsg = err.response?.data?.error || err.message || 'Payment verification failed. Your payment is secure with Razorpay, but we encountered an issue. Please contact support with your Razorpay Payment ID: ' + response.razorpay_payment_id;
+            setError(errorMsg);
             if (onError) {
               onError(err);
             }
@@ -225,18 +232,35 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
       }
 
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error || err.message || 'Payment initialization failed';
-      console.error('❌ Payment initialization error:', {
-        message: errorMessage,
-        status: err.response?.status,
-        url: err.response?.config?.url,
-        method: err.response?.config?.method,
-        errorType: err.constructor.name,
-        fullError: err
-      });
-      setError(errorMessage);
-      if (onError) {
-        onError(err);
+      // special-case: backend may respond 400 with "Order already paid" when
+      // verify is called twice; treat as success to avoid confusing users.
+      const status = err.response?.status;
+      const dataError = err.response?.data?.error || err.response?.data?.message;
+      const errorMessage = dataError || err.message || 'Payment initialization failed';
+
+      if (status === 400 && /already paid/i.test(errorMessage)) {
+        console.warn('Duplicate payment verification detected, treating as success');
+        if (onSuccess) {
+          onSuccess({
+            orderId: err.response?.data?.orderId || '(unknown)',
+            paymentId: err.response?.data?.paymentId || '(unknown)',
+            amount
+          });
+        }
+        setError(null);
+      } else {
+        console.error('❌ Payment initialization error:', {
+          message: errorMessage,
+          status: status,
+          url: err.response?.config?.url,
+          method: err.response?.config?.method,
+          errorType: err.constructor.name,
+          fullError: err
+        });
+        setError(errorMessage);
+        if (onError) {
+          onError(err);
+        }
       }
     } finally {
       setLoading(false);
