@@ -78,11 +78,11 @@ class PaymentService {
         }, contact ? { contact } : {})
       });
 
-      // 4. Save order in database with items_json
+      // 4. Save order in database without items_json
       const orderInsertResult = await conn.query(
-        `INSERT INTO orders (user_id, total_amount, razorpay_order_id, status, items_json, created_at)
-         VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
-        [userId, finalAmount, razorpayOrder.id, 'PENDING', JSON.stringify(validatedItems)]
+        `INSERT INTO orders (user_id, total_amount, razorpay_order_id, status, created_at)
+         VALUES ($1, $2, $3, $4, NOW()) RETURNING *`,
+        [userId, finalAmount, razorpayOrder.id, 'PENDING']
       );
 
       await conn.query('COMMIT');
