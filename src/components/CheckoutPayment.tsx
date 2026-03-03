@@ -77,6 +77,15 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
       }
       console.log('✅ Razorpay script loaded');
 
+      // 1.5. Fetch Razorpay key from backend (ensures we use live key)
+      console.log('🔑 Fetching Razorpay key from backend...');
+      const configResponse = await api.get('/payment/config');
+      if (!configResponse.data.success || !configResponse.data.razorpayKeyId) {
+        throw new Error('Failed to fetch Razorpay key from server');
+      }
+      const razorpayKeyId = configResponse.data.razorpayKeyId;
+      console.log('✅ Razorpay key retrieved from backend');
+
       console.log(`🔄 Creating order for ${items.length} items...`);
       console.log(`📡 API Base URL: ${import.meta.env.VITE_API_BASE_URL}`);
 
@@ -102,7 +111,7 @@ const CheckoutPayment: React.FC<CheckoutPaymentProps> = ({
       // 3. Open Razorpay checkout
       console.log('🎯 Opening Razorpay Checkout modal...');
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_SG2Tx6WI4tXjVc',
+        key: razorpayKeyId,  // ✅ Use key from backend (live key)
         amount: Math.round(amount * 100), // Convert to paise
         currency: 'INR',
         name: 'Bhatkar Fragrance Hub',

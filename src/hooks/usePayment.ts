@@ -127,10 +127,17 @@ export function usePayment() {
         console.log(`   Razorpay Order: ${razorpayOrderId}`);
         console.log(`   Amount: ₹${amount}`);
 
+        // ========== STEP 6.5: FETCH RAZORPAY KEY FROM BACKEND ==========
+        const configResponse = await api.get('/payment/config');
+        if (!configResponse.data.success || !configResponse.data.razorpayKeyId) {
+          throw new Error('Failed to fetch Razorpay key from server');
+        }
+        const razorpayKeyId = configResponse.data.razorpayKeyId;
+
         console.log("🎯 Opening Razorpay Checkout modal...");
 
         const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+          key: razorpayKeyId,  // ✅ Use key from backend
           order_id: razorpayOrderId,
           amount: Math.round(amount * 100), // Convert to paise
           currency: "INR",

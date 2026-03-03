@@ -85,6 +85,34 @@ router.get('/health', async (req, res) => {
 });
 
 /**
+ * Get Razorpay Configuration
+ * Frontend needs the live key to initialize Razorpay checkout
+ * GET /api/payment/config (Public - no auth needed)
+ */
+router.get('/config', (req, res) => {
+  try {
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+    if (!razorpayKeyId) {
+      return res.status(500).json({
+        success: false,
+        error: 'Razorpay key not configured on server'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      razorpayKeyId: razorpayKeyId
+    });
+  } catch (error) {
+    console.error('❌ Error fetching Razorpay config:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch Razorpay configuration'
+    });
+  }
+});
+
+/**
  * Public Routes (Accessible to all authenticated users, not just admins)
  * IMPORTANT: These handle customer payments, so they should NOT require adminAuth
  */

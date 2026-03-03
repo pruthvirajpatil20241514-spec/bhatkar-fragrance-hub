@@ -69,6 +69,13 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
         throw new Error('Failed to load Razorpay script');
       }
 
+      // 1.5. Fetch Razorpay key from backend
+      const configResponse = await api.get('/payment/config');
+      if (!configResponse.data.success || !configResponse.data.razorpayKeyId) {
+        throw new Error('Failed to fetch Razorpay key from server');
+      }
+      const razorpayKeyId = configResponse.data.razorpayKeyId;
+
       // 2. Create order on backend
       const orderResponse = await api.post('/payment/create-order', {
         productId,
@@ -83,7 +90,7 @@ const RazorpayPayment: React.FC<RazorpayPaymentProps> = ({
 
       // 3. Open Razorpay checkout
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_SG2Tx6WI4tXjVc',
+        key: razorpayKeyId,  // ✅ Use key from backend
         amount: Math.round(amount * 100), // Convert to paise
         currency: 'INR',
         name: 'Bhatkar Fragrance Hub',
