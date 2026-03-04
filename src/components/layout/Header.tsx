@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Menu, X, Heart, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SearchBar } from "@/components/SearchBar";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { ProfileMenu } from "@/components/auth/ProfileMenu";
 import { useCart } from "@/contexts/CartContext";
@@ -109,10 +108,9 @@ function Header() {
         {/* Right Actions */}
         <div className="flex items-center space-x-2">
 
-          {/* Search + Wishlist + Profile + Theme toggle */}
+          {/* Wishlist + Profile + Theme toggle + Login */}
           <div className="flex items-center">
             <ThemeToggle />
-            <SearchBar attachRight />
 
             <Button
               variant="ghost"
@@ -212,8 +210,22 @@ function Header() {
               ))}
 
               <div className="flex items-center space-x-4 pt-4 border-t border-border">
-                <SearchBar />
                 <ThemeToggle />
+                {isAuthenticated ? (
+                  <ProfileMenu />
+                ) : (
+                  <Button
+                    variant="default"
+                    className="w-full"
+                    onClick={() => {
+                      setIsAuthModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Login
+                  </Button>
+                )}
               </div>
             </nav>
           </motion.div>

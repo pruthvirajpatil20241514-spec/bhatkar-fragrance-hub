@@ -330,7 +330,7 @@ export default function Shop() {
                     )}
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80 overflow-y-auto">
+                <SheetContent side="left" className="w-full sm:w-80 overflow-y-auto">
                   <SheetHeader>
                     <SheetTitle className="font-display">Filters</SheetTitle>
                   </SheetHeader>
