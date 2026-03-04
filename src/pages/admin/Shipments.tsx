@@ -82,10 +82,6 @@ export default function AdminShipments() {
       // ignore, we'll catch when performing actions
     }
   };
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreateShipment = async (orderId: number) => {
     try {
