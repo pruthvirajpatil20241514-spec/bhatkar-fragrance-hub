@@ -4,14 +4,24 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { collections } from "@/data/products";
 
-import collectionBest from "@/assets/generated/collection-men.png"; // Repurposing for variety
-import collectionWomen from "@/assets/generated/collection-women.png";
-import collectionUni from "@/assets/generated/collection-unisex.png";
+// dynamically load any available collection images to avoid build errors if a file is missing
+const rawImages = import.meta.globEager('/src/assets/generated/collection-*.png', { as: 'url' });
+
+// normalize into a name → url map
+const imageMap: Record<string, string> = {};
+Object.entries(rawImages).forEach(([p, m]) => {
+  const file = p.split('/').pop() || '';
+  // modules loaded with `as: 'url'` return string directly
+  imageMap[file] = (m as any) || '';
+});
+
+// fallback placeholder (a tiny transparent gif or solid color)
+const placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
 const collectionImages = [
-  collectionWomen,
-  collectionUni,
-  collectionBest,
+  imageMap['collection-women.png'] || placeholder,
+  imageMap['collection-unisex.png'] || placeholder,
+  imageMap['collection-men.png'] || placeholder,
 ];
 
 export function CollectionsSection() {
