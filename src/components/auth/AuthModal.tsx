@@ -128,7 +128,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="fixed md:absolute top-24 md:top-20 md:right-4 left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0 w-[calc(100%-2rem)] md:w-96 max-h-[calc(100vh-8rem)] md:max-h-[500px] overflow-y-auto bg-background border border-border rounded-lg shadow-xl z-50"
+            className="fixed md:absolute top-24 md:top-20 md:right-4 md:left-auto inset-x-4 md:inset-x-auto md:translate-x-0 w-auto md:w-96 max-h-[calc(100vh-8rem)] md:max-h-[500px] overflow-y-auto bg-background border border-border rounded-lg shadow-xl z-50"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border">
