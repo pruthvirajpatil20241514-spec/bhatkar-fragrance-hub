@@ -106,10 +106,10 @@ function Header() {
         </nav>
 
         {/* Right Actions */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 relative">
 
-          {/* Wishlist + Profile + Theme toggle + Login */}
-          <div className="flex items-center">
+          {/* Theme toggle (Desktop) */}
+          <div className="hidden md:flex items-center">
             <ThemeToggle />
 
             <Button
@@ -131,28 +131,56 @@ function Header() {
               )}
             </Button>
 
-            <div className="hidden md:flex relative">
-              {isAuthenticated ? (
-                <ProfileMenu />
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsAuthModalOpen(true)}
-                  aria-label="Account"
-                >
-                  <User className="h-5 w-5" />
-                </Button>
-              )}
-
-              {!isAuthenticated && isAuthModalOpen && (
-                <AuthModal
-                  isOpen={isAuthModalOpen}
-                  onClose={() => setIsAuthModalOpen(false)}
-                />
-              )}
-            </div>
+            {isAuthenticated ? (
+              <ProfileMenu />
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsAuthModalOpen(true)}
+                aria-label="Account"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            )}
           </div>
+
+          {/* Mobile Profile Icon */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden relative"
+            onClick={() => {
+              if (!isAuthenticated) {
+                setIsAuthModalOpen(true);
+              }
+            }}
+            aria-label="Account"
+          >
+            <User className="h-5 w-5" />
+            {isAuthenticated && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1 flex h-3 w-3 rounded-full bg-green-500"
+              />
+            )}
+          </Button>
+
+          {/* Mobile Profile Menu */}
+          {isAuthenticated && (
+            <div className="md:hidden relative">
+              <ProfileMenu />
+            </div>
+          )}
+
+          {/* Auth Modal - Accessible on all screen sizes */}
+          {!isAuthenticated && isAuthModalOpen && (
+            <AuthModal
+              isOpen={isAuthModalOpen}
+              onClose={() => setIsAuthModalOpen(false)}
+            />
+          )}
 
           {/* Cart Button */}
           <Button

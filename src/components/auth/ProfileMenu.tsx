@@ -69,13 +69,23 @@ export function ProfileMenu() {
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-xl z-50"
-          >
+          <>
+            {/* Mobile overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setIsOpen(false)}
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="fixed md:absolute right-4 left-4 md:right-0 md:left-auto md:mt-2 w-auto md:w-56 bg-background border border-border rounded-lg shadow-xl z-50 top-1/2 md:top-auto -translate-y-1/2 md:translate-y-0"
+            >
             {/* User Info */}
             <div className={`px-4 py-3 border-b border-border ${
               isAdmin ? "bg-amber-500/10" : "bg-muted/50"
@@ -143,6 +153,7 @@ export function ProfileMenu() {
               )}
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
