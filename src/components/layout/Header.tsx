@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Menu, X, Heart, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,23 +11,30 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
+// ✅ Import Logo
+import logo from "@/assets/Bhatkarlogo.png";
+
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
   { href: "/about", label: "About" },
+  { href: "/orders", label: "Orders" },
 ];
 
-export function Header() {
+function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   const { toggleCart, totalItems } = useCart();
   const { items: wishlistItems } = useWishlist();
   const { isAuthenticated } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container flex h-20 items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 transition-all duration-300">
+      <div className="container mx-auto px-4 flex h-20 items-center justify-between">
+
         {/* Mobile Menu Button */}
         <Button
           variant="ghost"
@@ -36,22 +43,37 @@ export function Header() {
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label="Toggle menu"
         >
-          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {isMobileMenuOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
         </Button>
 
         {/* Logo */}
-        <Link to="/" className="flex items-center space-x-2">
+        <Link
+          to="/"
+          className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+        >
+          {/* ✅ Logo Image */}
+          <img
+            src={logo}
+            alt="Bhatkar Perfumery Logo"
+            className="h-10 w-auto object-contain"
+          />
+
+          {/* Logo Text */}
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col items-center"
+            initial={{ opacity: 0, x: -5 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex flex-col items-start"
           >
-            <span className="font-display text-2xl font-bold tracking-tight text-foreground">
-              Bhatkar & Co
+            <span className="font-display text-xl font-black tracking-tighter text-foreground leading-none transition-colors duration-300">
+              BHATKAR
             </span>
-            <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-              Fine Perfumery
+            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary/70 leading-relaxed">
+              & CO. PERFUMERY
             </span>
           </motion.div>
         </Link>
@@ -63,17 +85,20 @@ export function Header() {
               key={link.href}
               to={link.href}
               className={cn(
-                "text-sm font-medium transition-colors hover:text-primary relative group",
+                "text-[13px] uppercase tracking-[0.1em] font-bold transition-all duration-300 hover:text-primary relative group py-2",
                 location.pathname === link.href
-                  ? "text-primary"
-                  : "text-muted-foreground"
+                  ? "text-primary px-2"
+                  : "text-foreground/70 px-2"
               )}
             >
               {link.label}
-              <span
+              <motion.span
+                layoutId="nav-underline"
                 className={cn(
-                  "absolute -bottom-1 left-0 h-0.5 bg-primary transition-all duration-300",
-                  location.pathname === link.href ? "w-full" : "w-0 group-hover:w-full"
+                  "absolute bottom-0 left-0 h-[2px] bg-primary rounded-full",
+                  location.pathname === link.href
+                    ? "w-full"
+                    : "w-0 group-hover:w-full transition-all duration-300"
                 )}
               />
             </Link>
@@ -82,46 +107,54 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center space-x-2">
-          <SearchBar />
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="hidden md:flex relative"
-            onClick={() => window.location.href = '/wishlist'}
-            aria-label="Wishlist"
-          >
-            <Heart className="h-5 w-5" />
-            {wishlistItems.length > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-medium text-destructive-foreground"
-              >
-                {wishlistItems.length}
-              </motion.span>
-            )}
-          </Button>
-          
-          {/* Profile / Auth Button */}
-          <div className="hidden md:flex relative">
-            {isAuthenticated ? (
-              <ProfileMenu />
-            ) : (
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setIsAuthModalOpen(true)}
-                aria-label="Account"
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            )}
-            {/* Auth Modal Dropdown */}
-            {!isAuthenticated && isAuthModalOpen && (
-              <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
-            )}
+
+          {/* Search + Wishlist + Profile */}
+          <div className="flex items-center">
+            <SearchBar attachRight />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden md:flex relative rounded-l-none border-l border-border"
+              onClick={() => navigate("/wishlist")}
+              aria-label="Wishlist"
+            >
+              <Heart className="h-5 w-5" />
+              {wishlistItems.length > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-medium text-destructive-foreground"
+                >
+                  {wishlistItems.length}
+                </motion.span>
+              )}
+            </Button>
+
+            <div className="hidden md:flex relative">
+              {isAuthenticated ? (
+                <ProfileMenu />
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  aria-label="Account"
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+              )}
+
+              {!isAuthenticated && isAuthModalOpen && (
+                <AuthModal
+                  isOpen={isAuthModalOpen}
+                  onClose={() => setIsAuthModalOpen(false)}
+                />
+              )}
+            </div>
           </div>
 
+          {/* Cart Button */}
           <Button
             variant="ghost"
             size="icon"
@@ -143,7 +176,7 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation (unchanged below) */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -164,7 +197,7 @@ export function Header() {
                   <Link
                     to={link.href}
                     className={cn(
-                      "block text-lg font-medium transition-colors hover:text-primary py-2",
+                      "block text-lg font-medium hover:text-primary py-2",
                       location.pathname === link.href
                         ? "text-primary"
                         : "text-foreground"
@@ -175,31 +208,9 @@ export function Header() {
                   </Link>
                 </motion.div>
               ))}
+
               <div className="flex items-center space-x-4 pt-4 border-t border-border">
                 <SearchBar />
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    window.location.href = '/wishlist';
-                  }}
-                  className="relative"
-                >
-                  <Heart className="h-5 w-5" />
-                  {wishlistItems.length > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-medium text-destructive-foreground">
-                      {wishlistItems.length}
-                    </span>
-                  )}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setIsAuthModalOpen(true)}
-                >
-                  <User className="h-5 w-5" />
-                </Button>
               </div>
             </nav>
           </motion.div>
@@ -208,3 +219,6 @@ export function Header() {
     </header>
   );
 }
+
+export default Header;
+export { Header };

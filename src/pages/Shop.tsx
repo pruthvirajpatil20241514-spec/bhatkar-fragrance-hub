@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Filter, SlidersHorizontal, X, Search } from "lucide-react";
+import { Filter, SlidersHorizontal, X, Search, RefreshCw } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { ProductCard } from "@/components/products/ProductCard";
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,10 @@ import {
 } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { products } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
+import { toast } from "sonner";
+import { useProducts } from "@/contexts/ProductContext";
+import { WeekendSaleHero } from "@/components/WeekendSaleHero";
 
 const categories = [
   { value: "men", label: "Men" },
@@ -60,6 +62,8 @@ export default function Shop() {
   const [searchParams] = useSearchParams();
   const collectionParam = searchParams.get("collection");
 
+  const { products, loading: productsLoading, refreshProducts } = useProducts();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -68,46 +72,41 @@ export default function Shop() {
   const [sortBy, setSortBy] = useState("popularity");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Collection filter
-    if (collectionParam) {
-      if (collectionParam === "best-sellers") {
-        result = result.filter((p) => p.isBestSeller);
-      } else if (collectionParam === "new-arrivals") {
-        result = result.filter((p) => p.isNewArrival);
-      } else if (collectionParam === "luxury") {
-        result = result.filter((p) => p.isLuxury);
-      }
+  // Manual refresh function
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshProducts();
+      toast.success("Products refreshed successfully");
+    } catch (error: any) {
+      toast.error("Failed to refresh products");
+    } finally {
+      setIsRefreshing(false);
     }
+  };
+
+  const filteredProducts = useMemo(() => {
+    // Rely exclusively on global context products
+    let result = [...products];
 
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.description.toLowerCase().includes(query) ||
-          p.notes.top.some((n) => n.toLowerCase().includes(query)) ||
-          p.notes.middle.some((n) => n.toLowerCase().includes(query)) ||
-          p.notes.base.some((n) => n.toLowerCase().includes(query))
+          p.name?.toLowerCase().includes(query) ||
+          p.description?.toLowerCase().includes(query) ||
+          p.brand?.toLowerCase().includes(query)
       );
     }
 
     // Category filter
     if (selectedCategories.length > 0) {
-      result = result.filter((p) => selectedCategories.includes(p.category));
-    }
-
-    // Fragrance type filter
-    if (selectedTypes.length > 0) {
-      result = result.filter((p) => selectedTypes.includes(p.fragranceType));
-    }
-
-    // Longevity filter
-    if (selectedLongevity.length > 0) {
-      result = result.filter((p) => selectedLongevity.includes(p.longevity));
+      result = result.filter((p) =>
+        selectedCategories.includes(p.category?.toLowerCase() || '')
+      );
     }
 
     // Price filter
@@ -118,20 +117,17 @@ export default function Shop() {
     // Sort
     switch (sortBy) {
       case "price-asc":
-        result.sort((a, b) => a.price - b.price);
+        result.sort((a: any, b: any) => a.price - b.price);
         break;
       case "price-desc":
-        result.sort((a, b) => b.price - a.price);
+        result.sort((a: any, b: any) => b.price - a.price);
         break;
       case "newest":
-        result.sort((a, b) => (a.isNewArrival ? -1 : 1));
-        break;
-      case "rating":
-        result.sort((a, b) => b.rating - a.rating);
+        result.sort((a: any, b: any) => b.id - a.id);
         break;
       case "popularity":
       default:
-        result.sort((a, b) => b.reviewCount - a.reviewCount);
+        result.sort((a: any, b: any) => b.id - a.id);
     }
 
     return result;
@@ -143,6 +139,7 @@ export default function Shop() {
     priceRange,
     sortBy,
     collectionParam,
+    products
   ]);
 
   const clearFilters = () => {
@@ -290,28 +287,7 @@ export default function Shop() {
   return (
     <Layout>
       {/* Hero */}
-      <section className="bg-secondary/30 py-16">
-        <div className="container px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
-              {collectionParam
-                ? collectionParam
-                    .split("-")
-                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                    .join(" ")
-                : "All Fragrances"}
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Explore our exquisite collection of handcrafted perfumes
-            </p>
-          </motion.div>
-        </div>
-      </section>
+      <WeekendSaleHero />
 
       <section className="py-12">
         <div className="container px-4">
@@ -329,6 +305,18 @@ export default function Shop() {
             </div>
 
             <div className="flex gap-3 items-center">
+              {/* Refresh Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+
               {/* Mobile Filter Button */}
               <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                 <SheetTrigger asChild>
@@ -368,9 +356,15 @@ export default function Shop() {
               </Select>
 
               {/* Results Count */}
-              <span className="text-sm text-muted-foreground hidden md:block">
-                {filteredProducts.length} products
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
+                  {products.length > 0 && ` (${products.length} total)`}
+                </span>
+                {productsLoading && (
+                  <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -388,7 +382,21 @@ export default function Shop() {
 
             {/* Products Grid */}
             <div className="flex-1">
-              {filteredProducts.length === 0 ? (
+              {productsLoading && filteredProducts.length === 0 ? (
+                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="bg-card rounded-lg overflow-hidden shadow-soft animate-pulse">
+                      <div className="aspect-[3/4] bg-secondary" />
+                      <div className="p-4 space-y-3">
+                        <div className="h-4 bg-secondary rounded w-1/3" />
+                        <div className="h-6 bg-secondary rounded w-3/4" />
+                        <div className="h-4 bg-secondary rounded w-1/2" />
+                        <div className="h-8 bg-secondary rounded w-full mt-4" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredProducts.length === 0 ? (
                 <div className="text-center py-20">
                   <p className="text-muted-foreground text-lg mb-4">
                     No products found matching your criteria
@@ -402,7 +410,7 @@ export default function Shop() {
                   {filteredProducts.map((product, index) => (
                     <ProductCard
                       key={product.id}
-                      product={product}
+                      product={product as any}
                       index={index}
                     />
                   ))}

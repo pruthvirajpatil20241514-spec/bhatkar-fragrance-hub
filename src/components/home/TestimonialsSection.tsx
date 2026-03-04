@@ -31,7 +31,7 @@ export function TestimonialsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.15 }}
-              className="bg-card rounded-xl p-6 shadow-soft hover:shadow-medium transition-shadow duration-300"
+              className="bg-card/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-2 group"
             >
               {/* Quote Icon */}
               <Quote className="h-8 w-8 text-primary/20 mb-4" />

@@ -1,21 +1,29 @@
 import { Layout } from "@/components/layout/Layout";
 import { motion } from "framer-motion";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { COMPANY_INFO } from "@/config/company";
 
 export default function About() {
   return (
     <Layout>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background relative overflow-hidden">
+        {/* Background Decorative Elements */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px] -z-0" />
+        <div className="absolute bottom-1/4 left-0 w-[500px] h-[500px] rounded-full bg-accent/5 blur-[140px] -z-0" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.02] pointer-events-none -z-0"
+          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)', backgroundSize: '60px 60px' }} />
+
         {/* Hero Section */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="py-16 md:py-24 border-b border-border/50"
+          transition={{ duration: 0.8 }}
+          className="relative z-10 py-16 md:py-32 border-b border-border/30 overflow-hidden"
         >
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-accent/5" />
           <div className="container max-w-4xl">
-            <h1 className="font-display text-4xl md:text-5xl font-bold mb-6">
-              About Bhatkar & Co
+            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-black mb-6 tracking-tighter">
+              About <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent italic">Bhatkar & Co</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-6">
               Welcome to Bhatkar & Co, where tradition meets luxury in the world of fine perfumery.
@@ -34,19 +42,19 @@ export default function About() {
             <h2 className="font-display text-3xl font-bold mb-8">Our Story</h2>
             <div className="space-y-6 text-muted-foreground leading-relaxed">
               <p>
-                Founded with a passion for exquisite fragrances, Bhatkar & Co has been dedicated to 
-                bringing the finest scents from around the world to discerning customers. Our commitment 
-                to quality, authenticity, and customer satisfaction has made us a trusted name in the 
+                Founded with a passion for exquisite fragrances, Bhatkar & Co has been dedicated to
+                bringing the finest scents from around the world to discerning customers. Our commitment
+                to quality, authenticity, and customer satisfaction has made us a trusted name in the
                 perfume industry.
               </p>
               <p>
-                Each fragrance in our collection is carefully curated, selected for its exceptional 
+                Each fragrance in our collection is carefully curated, selected for its exceptional
                 quality and unique character. We believe that a good perfume is more than just a scent—
                 it's a story, a memory, and a reflection of one's personality.
               </p>
               <p>
-                Our expert team is passionate about helping you find the perfect fragrance that resonates 
-                with your individual style. Whether you're looking for a classic signature scent or 
+                Our expert team is passionate about helping you find the perfect fragrance that resonates
+                with your individual style. Whether you're looking for a classic signature scent or
                 something bold and contemporary, we're here to guide you through your fragrance journey.
               </p>
             </div>
@@ -94,7 +102,7 @@ export default function About() {
         >
           <div className="container max-w-4xl">
             <h2 className="font-display text-3xl font-bold mb-12">Contact Us</h2>
-            
+
             <div className="grid md:grid-cols-2 gap-12 mb-12">
               {/* Contact Information */}
               <div className="space-y-8">
@@ -105,13 +113,8 @@ export default function About() {
                   <div>
                     <h3 className="font-semibold text-lg mb-2">Phone</h3>
                     <p className="text-muted-foreground">
-                      <a href="tel:+919876543210" className="hover:text-primary transition-colors">
-                        +91 98765 43210
-                      </a>
-                    </p>
-                    <p className="text-muted-foreground">
-                      <a href="tel:+919876543211" className="hover:text-primary transition-colors">
-                        +91 98765 43211
+                      <a href={`tel:${COMPANY_INFO.phone}`} className="hover:text-primary transition-colors">
+                        {COMPANY_INFO.phone}
                       </a>
                     </p>
                   </div>
@@ -124,13 +127,8 @@ export default function About() {
                   <div>
                     <h3 className="font-semibold text-lg mb-2">Email</h3>
                     <p className="text-muted-foreground">
-                      <a href="mailto:info@bhatkarcco.com" className="hover:text-primary transition-colors">
-                        info@bhatkarcco.com
-                      </a>
-                    </p>
-                    <p className="text-muted-foreground">
-                      <a href="mailto:support@bhatkarcco.com" className="hover:text-primary transition-colors">
-                        support@bhatkarcco.com
+                      <a href={`mailto:${COMPANY_INFO.email}`} className="hover:text-primary transition-colors">
+                        {COMPANY_INFO.email}
                       </a>
                     </p>
                   </div>
@@ -142,11 +140,8 @@ export default function About() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg mb-2">Address</h3>
-                    <p className="text-muted-foreground">
-                      Bhatkar & Co<br />
-                      123 Fragrance Street<br />
-                      Mumbai, Maharashtra 400001<br />
-                      India
+                    <p className="text-muted-foreground whitespace-pre-line">
+                      {COMPANY_INFO.address}
                     </p>
                   </div>
                 </div>
@@ -187,15 +182,15 @@ export default function About() {
 
             {/* Mobile Quick Contact Buttons */}
             <div className="flex flex-col gap-3 mt-6 md:hidden">
-              <a 
-                href="tel:+919876543210"
+              <a
+                href={`tel:${COMPANY_INFO.phone}`}
                 className="flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
               >
                 <Phone className="h-5 w-5" />
                 Call Now
               </a>
-              <a 
-                href="mailto:info@bhatkarcco.com"
+              <a
+                href={`mailto:${COMPANY_INFO.email}`}
                 className="flex items-center justify-center gap-2 bg-secondary text-secondary-foreground py-3 rounded-lg font-semibold hover:bg-secondary/90 transition-colors"
               >
                 <Mail className="h-5 w-5" />

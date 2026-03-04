@@ -8,10 +8,41 @@ import { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { formatPrice, cn } from "@/lib/utils";
+import { getProductImageWithFallback } from "@/lib/imageUtils";
+import SafeImage from "@/components/ui/SafeImage";
+
+interface ProductImage {
+  id: number;
+  image_url: string;
+  alt_text: string;
+  image_order: number;
+  is_thumbnail: boolean;
+}
+
+interface DatabaseProduct {
+  id: number;
+  name: string;
+  brand: string;
+  price: number;
+  category: string;
+  concentration: string;
+  description: string;
+  stock: number;
+  images: ProductImage[];
+  quantity_ml?: number;
+  quantity_unit?: string;
+  is_best_seller?: boolean;
+  is_luxury_product?: boolean;
+}
 
 interface ProductCardProps {
-  product: Product;
+  product: Product | DatabaseProduct;
   index?: number;
+}
+
+function isStaticProduct(product: any): product is Product {
+  if (!product) return false;
+  return 'fragranceType' in product && 'sizes' in product;
 }
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
@@ -19,13 +50,31 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const { addItem } = useCart();
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
-  const isWishlisted = isInWishlist(product.id);
+
+  if (!product) return null;
+
+  const isWishlisted = isInWishlist(String(product.id));
+
+  const isStatic = isStaticProduct(product);
+  const imageUrl = isStatic
+    ? // static products store simple image strings
+    (product as Product).images && (product as Product).images.length ? (product as Product).images[0] : '/images/fallback/perfume1.svg'
+    : getProductImageWithFallback((product as DatabaseProduct).images, '/images/fallback/perfume1.svg');
+  const productPrice = product?.price || 0;
+  const productName = product?.name || 'Unknown Product';
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const defaultSize = product.sizes[product.sizes.length - 1];
-    addItem(product, defaultSize.ml, defaultSize.price);
+
+    if (isStatic) {
+      const staticProduct = product as Product;
+      const defaultSize = staticProduct.sizes[staticProduct.sizes.length - 1];
+      addItem(staticProduct, defaultSize.ml, defaultSize.price);
+    } else {
+      const dbProduct = product as DatabaseProduct;
+      addItem(dbProduct as any, 1, dbProduct.price);
+    }
   };
 
   return (
@@ -42,36 +91,49 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
         <div className="relative overflow-hidden rounded-lg bg-card shadow-soft transition-shadow duration-300 group-hover:shadow-medium">
           {/* Image Container */}
           <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
-            <motion.img
-              src={product.images[0]}
-              alt={product.name}
-              className="h-full w-full object-cover"
-              animate={{ scale: isHovered ? 1.05 : 1 }}
-              transition={{ duration: 0.4 }}
+            <SafeImage
+              src={imageUrl}
+              alt={productName}
+              className="h-full w-full"
+              style={{ aspectRatio: '3/4' }}
             />
 
-            {/* Badges */}
-            <div className="absolute left-3 top-3 flex flex-col gap-2">
-              {product.isNewArrival && (
-                <Badge className="bg-primary text-primary-foreground">New</Badge>
-              )}
-              {product.isBestSeller && (
-                <Badge className="bg-accent text-accent-foreground">Best Seller</Badge>
-              )}
-              {product.isLuxury && (
-                <Badge className="bg-charcoal text-ivory">Luxury</Badge>
-              )}
-              {product.originalPrice && (
-                <Badge className="bg-destructive text-destructive-foreground">
-                  {Math.round(
-                    ((product.originalPrice - product.price) /
-                      product.originalPrice) *
+            {/* Badges - Only show for static products */}
+            {isStatic && (
+              <div className="absolute left-3 top-3 flex flex-col gap-2">
+                {(product as Product).isNewArrival && (
+                  <Badge className="bg-primary text-primary-foreground">New</Badge>
+                )}
+                {(product as Product).isBestSeller && (
+                  <Badge className="bg-accent text-accent-foreground">Best Seller</Badge>
+                )}
+                {(product as Product).isLuxury && (
+                  <Badge className="bg-charcoal text-ivory">Luxury</Badge>
+                )}
+                {(product as Product).originalPrice && (
+                  <Badge className="bg-destructive text-destructive-foreground">
+                    {Math.round(
+                      (((product as Product).originalPrice - productPrice) /
+                        (product as Product).originalPrice) *
                       100
-                  )}
-                  % Off
-                </Badge>
-              )}
-            </div>
+                    )}
+                    % Off
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            {/* Badges - For database products */}
+            {!isStatic && (
+              <div className="absolute left-3 top-3 flex flex-col gap-2">
+                {(product as DatabaseProduct).is_best_seller && (
+                  <Badge className="bg-accent text-accent-foreground">⭐ Best Seller</Badge>
+                )}
+                {(product as DatabaseProduct).is_luxury_product && (
+                  <Badge className="bg-purple-600 text-white">💎 Luxury</Badge>
+                )}
+              </div>
+            )}
 
             {/* Wishlist Button */}
             <motion.button
@@ -87,9 +149,9 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                 e.preventDefault();
                 e.stopPropagation();
                 if (isWishlisted) {
-                  removeFromWishlist(product.id);
+                  removeFromWishlist(String(product.id));
                 } else {
-                  addToWishlist(product);
+                  addToWishlist(product as any);
                 }
               }}
             >
@@ -119,59 +181,92 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           {/* Product Info */}
           <div className="p-4">
             {/* Category */}
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-              {product.category} • {product.fragranceType}
-            </p>
+            {isStatic ? (
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                {(product as Product).category} • {(product as Product).fragranceType}
+              </p>
+            ) : (
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                {(product as DatabaseProduct).category} • {(product as DatabaseProduct).concentration}
+              </p>
+            )}
 
-            {/* Name */}
-            <h3 className="font-display text-lg font-semibold mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-              {product.name}
-            </h3>
-
-            {/* Rating */}
-            <div className="flex items-center gap-1 mb-3">
-              <Star className="h-4 w-4 fill-primary text-primary" />
-              <span className="text-sm font-medium">{product.rating}</span>
-              <span className="text-sm text-muted-foreground">
-                ({product.reviewCount} reviews)
-              </span>
+            {/* Name & Brand */}
+            <div>
+              <h3 className="font-display text-lg font-semibold mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                {productName}
+              </h3>
+              {!isStatic && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  {(product as DatabaseProduct).brand}
+                </p>
+              )}
+              {!isStatic && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  {((product as DatabaseProduct).quantity_ml ?? 0)}{(product as DatabaseProduct).quantity_unit || 'ml'}
+                </p>
+              )}
             </div>
 
+            {/* Rating - Only show for static products */}
+            {isStatic && (
+              <div className="flex items-center gap-1 mb-3">
+                <Star className="h-4 w-4 fill-primary text-primary" />
+                <span className="text-sm font-medium">{(product as Product).rating}</span>
+                <span className="text-sm text-muted-foreground">
+                  ({(product as Product).reviewCount} reviews)
+                </span>
+              </div>
+            )}
+
             {/* Price */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-3">
               <span className="text-lg font-semibold text-primary">
-                {formatPrice(product.price)}
+                ₹{formatPrice(productPrice)}
               </span>
-              {product.originalPrice && (
+              {isStatic && (product as Product).originalPrice && (
                 <span className="text-sm text-muted-foreground line-through">
-                  {formatPrice(product.originalPrice)}
+                  ₹{formatPrice((product as Product).originalPrice)}
                 </span>
               )}
             </div>
 
-            {/* Size Options Preview */}
-            <div className="flex gap-2 mt-3">
-              {product.sizes.map((size) => (
-                <span
-                  key={size.ml}
-                  className="text-xs px-2 py-1 rounded bg-secondary text-muted-foreground"
-                >
-                  {size.ml}ml
-                </span>
-              ))}
-            </div>
+            {/* Size Options Preview - Only for static products */}
+            {isStatic && (
+              <div className="flex gap-2 mt-3 mb-3">
+                {(product as Product).sizes.map((size) => (
+                  <span
+                    key={size.ml}
+                    className="text-xs px-2 py-1 rounded bg-secondary text-muted-foreground"
+                  >
+                    {size.ml}ml
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Stock Status - For database products */}
+            {!isStatic && (
+              <div className="text-xs mb-3">
+                {(product as DatabaseProduct).stock > 0 ? (
+                  <span className="text-green-600 font-medium">In Stock ({(product as DatabaseProduct).stock})</span>
+                ) : (
+                  <span className="text-red-600 font-medium">Out of Stock</span>
+                )}
+              </div>
+            )}
 
             {/* Mobile Quick Action Buttons */}
-            <div className="flex gap-2 mt-4 md:hidden">
-              <Button 
-                size="sm" 
+            <div className="flex gap-2 md:hidden">
+              <Button
+                size="sm"
                 className="flex-1 h-8 text-xs"
                 onClick={handleAddToCart}
               >
                 <ShoppingBag className="h-3 w-3 mr-1" />
                 Add
               </Button>
-              <Button 
+              <Button
                 size="sm"
                 variant={isWishlisted ? "default" : "outline"}
                 className="h-8 w-8 p-0"
@@ -179,9 +274,9 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                   e.preventDefault();
                   e.stopPropagation();
                   if (isWishlisted) {
-                    removeFromWishlist(product.id);
+                    removeFromWishlist(String(product.id));
                   } else {
-                    addToWishlist(product);
+                    addToWishlist(product as any);
                   }
                 }}
               >

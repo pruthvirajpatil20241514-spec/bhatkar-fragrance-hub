@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/lib/utils";
+import { getProductImage, handleImageError } from "@/lib/imageUtils";
 
 export function CartDrawer() {
   const {
@@ -79,9 +80,10 @@ export function CartDrawer() {
                         {/* Product Image */}
                         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-md bg-secondary">
                           <img
-                            src={item.product.images[0]}
+                            src={getProductImage(item.product.images)}
                             alt={item.product.name}
                             className="h-full w-full object-cover"
+                            onError={(e) => handleImageError(e as any)}
                           />
                         </div>
 

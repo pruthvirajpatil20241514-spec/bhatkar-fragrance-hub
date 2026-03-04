@@ -1,8 +1,63 @@
 const app = require('./app');
 const { logger } = require('./utils/logger');
+const db = require('./config/db');
+const { runStartupMigrations } = require('./database/startupMigrations');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
-    logger.info(`Running on PORT ${PORT}`);
-});
+/**
+ * SERVER STARTUP
+ */
+async function startServer() {
+    try {
+        // Start listening immediately to satisfy Render's health checks
+        const server = app.listen(PORT, '0.0.0.0', () => {
+            logger.info('============================================================');
+            logger.info(`🚀 SERVER STARTED ON PORT ${PORT}`);
+            logger.info(`⏱️  Uptime: ${process.uptime()}s`);
+            logger.info('============================================================');
+        });
+
+        // Background tasks (non-blocking)
+        (async () => {
+            try {
+                logger.info('🔄 Starting background initialization...');
+
+                // Verify database connection
+                const connected = await db.verifyConnection();
+                if (!connected) {
+                    logger.error('⚠️ Database connection could not be established in background.');
+                } else {
+                    // Run startup migrations
+                    await runStartupMigrations(db, logger);
+                }
+
+                logger.info('✅ Background initialization sequence finished.');
+            } catch (initError) {
+                logger.error('❌ Background initialization error:', initError.message);
+            }
+        })();
+
+        // Handle server errors
+        server.on('error', (err) => {
+            if (err && err.code === 'EADDRINUSE') {
+                logger.error(`❌ Port ${PORT} is already in use.`);
+                process.exit(1);
+            }
+            logger.error('Server encountered an unexpected error:', err.message);
+            process.exit(1);
+        });
+
+        return server;
+    } catch (error) {
+        logger.error('❌ Failed to start server:', error.message);
+        process.exit(1);
+    }
+}
+
+// Start the server
+if (require.main === module) {
+    startServer();
+}
+
+module.exports = { startServer };

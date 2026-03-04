@@ -2,11 +2,13 @@ import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
-import { formatPrice } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatPrice, getImageUrl } from "@/lib/utils";
 import { Layout } from "@/components/layout/Layout";
 
 export default function Cart() {
   const { state, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
+  const { user } = useAuth();
 
   if (state.items.length === 0) {
     return (
@@ -61,13 +63,15 @@ export default function Cart() {
                   >
                     {/* Product Image */}
                     <div className="h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 rounded-md bg-muted">
-                      {item.product.images && item.product.images[0] && (
-                        <img
-                          src={item.product.images[0]}
-                          alt={item.product.name}
-                          className="h-full w-full object-cover rounded-md"
-                        />
-                      )}
+                      <img
+                        src={getImageUrl(item.product.images)}
+                        alt={item.product.name}
+                        className="h-full w-full object-cover rounded-md"
+                        onError={(e) => {
+                          console.error(`❌ Cart image load failed for product ${item.product.id}`);
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
                     </div>
 
                     {/* Product Details */}
@@ -163,7 +167,15 @@ export default function Cart() {
                   </div>
 
                   <div className="space-y-2">
-                    <Link to="/checkout" className="block">
+                    <Link
+                      to="/checkout"
+                      state={{
+                        email: user?.email || '',
+                        firstName: user?.firstname || '',
+                        lastName: user?.lastname || ''
+                      }}
+                      className="block"
+                    >
                       <Button className="w-full" size="sm" >
                         Proceed to Checkout
                       </Button>
@@ -178,9 +190,8 @@ export default function Cart() {
                 </div>
 
                 <div className="mt-4 rounded-md bg-muted p-2 sm:p-3 text-xs text-muted-foreground space-y-1">
-                  <div>✓ Free shipping on orders over $100</div>
                   <div>✓ 100% authentic products</div>
-                  <div>✓ Easy returns</div>
+                  <div>✓ No Return Policy</div>
                 </div>
               </div>
             </div>
