@@ -14,6 +14,7 @@ const orderRoute = require("./routes/order.route");
 const uploadRoute = require("./routes/upload.route");
 const imageRoute = require("./routes/image.route");
 const paymentRoute = require("./routes/paymentRoutes");
+const shipmentRoute = require("./routes/shipment.route");
 const { httpLogStream, logger } = require("./utils/logger");
 
 const app = express();
@@ -123,6 +124,7 @@ app.use("/api/orders", orderRoute);
 app.use("/api/upload-image", uploadRoute);
 app.use("/api/images", imageRoute);
 app.use("/api/payment", paymentRoute);
+app.use("/api/shipments", shipmentRoute);
 
 // ========================================================================
 // SERVE FRONTEND (SPA FALLBACK)
