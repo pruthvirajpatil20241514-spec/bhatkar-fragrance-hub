@@ -43,6 +43,7 @@ export default function AdminShipments() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [configError, setConfigError] = useState<string | null>(null);
   const [updateLoading, setUpdateLoading] = useState<number | null>(null);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function AdminShipments() {
 
   useEffect(() => {
     fetchOrders();
+    fetchConfig();
   }, []);
 
   const fetchOrders = async () => {
@@ -67,6 +69,24 @@ export default function AdminShipments() {
     }
   };
 
+  const fetchConfig = async () => {
+    try {
+      const res = await api.get('/shipments/config');
+      if (res.data && res.data.configured === false) {
+        setConfigError(res.data.message || 'Shiprocket not configured');
+      } else {
+        setConfigError(null);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch shipment config:', err);
+      // ignore, we'll catch when performing actions
+    }
+  };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreateShipment = async (orderId: number) => {
     try {
       setUpdateLoading(orderId);
@@ -76,7 +96,11 @@ export default function AdminShipments() {
       toast.success(`Shipment ${updated.shiprocket_order_id || ''}`);
     } catch (err: any) {
       console.error("❌ Failed to create shipment:", err);
-      toast.error(err.response?.data?.message || "Failed to create shipment");
+      const msg = err.response?.data?.message || err.message || "Failed to create shipment";
+      toast.error(msg);
+      if (err.response?.status === 422) {
+        setConfigError(msg);
+      }
     } finally {
       setUpdateLoading(null);
     }
@@ -120,6 +144,12 @@ export default function AdminShipments() {
       </div>
 
       <div className="container mx-auto px-4 mt-8">
+        {configError && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-100 dark:bg-amber-900 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5" />
+            <p className="font-medium">{configError}</p>
+          </div>
+        )}
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-center gap-3">
             <AlertCircle className="h-5 w-5" />

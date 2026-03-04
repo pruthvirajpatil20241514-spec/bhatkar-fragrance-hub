@@ -15,6 +15,13 @@ async function fetchOrder(orderId) {
 
 // usable from other modules
 async function createShipmentInternal(orderId) {
+  // require Shiprocket credentials before doing anything
+  if (!process.env.SHIPROCKET_EMAIL || !process.env.SHIPROCKET_PASSWORD) {
+    const err = new Error('SHIPROCKET_EMAIL or SHIPROCKET_PASSWORD not set');
+    err.status = 422;
+    throw err;
+  }
+
   const order = await fetchOrder(orderId);
   if (!order) throw new Error('Order not found');
 
@@ -101,6 +108,14 @@ async function createShipmentForOrder(req, res) {
     });
   }
 
+  // additional guard: env vars must be present
+  if (!process.env.SHIPROCKET_EMAIL || !process.env.SHIPROCKET_PASSWORD) {
+    return res.status(422).json({
+      status: "error",
+      message: "SHIPROCKET_EMAIL or SHIPROCKET_PASSWORD not set"
+    });
+  }
+
   try {
     const order = await createShipmentInternal(orderId);
 
@@ -112,7 +127,8 @@ async function createShipmentForOrder(req, res) {
   } catch (err) {
     logger.error("createShipmentForOrder failed:", err.message || err);
 
-    return res.status(500).json({
+    const statusCode = err.status && Number(err.status) >= 400 ? err.status : 500;
+    return res.status(statusCode).json({
       status: "error",
       message: err.message || "Shiprocket error"
     });
