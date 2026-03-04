@@ -695,7 +695,7 @@ export default function Products() {
                               ⭐ Yes
                             </span>
                           ) : (
-                            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-muted/20 dark:bg-muted/30 text-muted-foreground">
                               No
                             </span>
                           )}
@@ -1098,7 +1098,7 @@ export default function Products() {
                           ) : (
                             <div className="space-y-1 mb-2">
                               {variantImageFiles.map((f, i) => (
-                                <div key={i} className="flex items-center justify-between bg-white p-2 rounded">
+                                <div key={i} className="flex items-center justify-between bg-card p-2 rounded">
                                   <span className="truncate mr-2">{f.name}</span>
                                   <span className="text-muted-foreground text-xs">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
                                 </div>
@@ -1202,7 +1202,7 @@ export default function Products() {
                                 key={i}
                                 className={`h-3 w-3 ${i < review.rating
                                   ? "fill-yellow-400 text-yellow-400"
-                                  : "text-gray-300"
+                                  : "text-muted-foreground/60"
                                   }`}
                               />
                             ))}
@@ -1253,7 +1253,7 @@ export default function Products() {
                               key={i}
                               className={`h-4 w-4 cursor-pointer ${i < newReview.rating
                                 ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
+                                : "text-muted-foreground/60"
                                 }`}
                               onClick={() => setNewReview({ ...newReview, rating: i + 1 })}
                             />

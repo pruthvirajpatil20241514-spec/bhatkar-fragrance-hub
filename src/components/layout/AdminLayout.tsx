@@ -43,13 +43,13 @@ export function AdminLayout({ children, activeTab, title }: AdminLayoutProps) {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] flex overflow-hidden">
+        <div className="min-h-screen bg-background flex overflow-hidden">
             {/* Sidebar */}
             <AnimatePresence mode="wait">
                 <motion.aside
                     initial={false}
                     animate={{ width: isSidebarOpen ? 280 : 80 }}
-                    className="fixed left-0 top-0 bottom-0 bg-white border-r border-border/50 z-50 flex flex-col shadow-sm"
+                    className="fixed left-0 top-0 bottom-0 bg-sidebar border-r border-border/50 z-50 flex flex-col shadow-sm"
                 >
                     {/* Sidebar Header - Logo */}
                     <div className="h-20 flex items-center px-6 border-b border-border/40">
@@ -97,7 +97,7 @@ export function AdminLayout({ children, activeTab, title }: AdminLayoutProps) {
                                     {isActive && isSidebarOpen && (
                                         <motion.div
                                             layoutId="sidebar-active-indicator"
-                                            className="absolute right-2 w-1.5 h-1.5 rounded-full bg-white/50"
+                                            className="absolute right-2 w-1.5 h-1.5 rounded-full bg-white/50 dark:bg-white/30"
                                         />
                                     )}
                                 </Link>
@@ -144,7 +144,7 @@ export function AdminLayout({ children, activeTab, title }: AdminLayoutProps) {
                 isSidebarOpen ? "ml-[280px]" : "ml-[80px]"
             )}>
                 {/* Top Header */}
-                <header className="h-20 bg-white/80 backdrop-blur-md border-b border-border/40 sticky top-0 z-40 px-8 flex items-center justify-between shadow-sm">
+                <header className="h-20 bg-white/80 dark:bg-background/80 backdrop-blur-md border-b border-border/40 sticky top-0 z-40 px-8 flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-4">
                         <Button
                             variant="ghost"

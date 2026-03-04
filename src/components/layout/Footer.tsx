@@ -61,7 +61,7 @@ export function Footer() {
             </p>
           </div>
           <form className="w-full lg:max-w-md group">
-            <div className="relative flex p-1.5 bg-white/5 border border-white/10 rounded-2xl focus-within:border-primary/50 transition-all duration-300">
+            <div className="relative flex p-1.5 bg-white/5 dark:bg-white/10 border border-white/10 dark:border-white/20 rounded-2xl focus-within:border-primary/50 transition-all duration-300">
               <Input
                 type="email"
                 placeholder="Enter your email"
@@ -105,7 +105,7 @@ export function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center text-white/50 hover:bg-primary hover:text-white hover:scale-110 transition-all duration-300 border border-white/10"
+                  className="w-11 h-11 rounded-xl bg-white/5 dark:bg-white/10 flex items-center justify-center text-white/50 hover:bg-primary hover:text-white hover:scale-110 transition-all duration-300 border border-white/10 dark:border-white/20"
                   aria-label={social.label}
                 >
                   <social.icon className="h-5 w-5" />

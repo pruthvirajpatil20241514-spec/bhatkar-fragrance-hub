@@ -10,6 +10,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 // ✅ Import Logo
 import logo from "@/assets/Bhatkarlogo.png";
@@ -32,7 +33,7 @@ function Header() {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 transition-all duration-300">
+    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-white/70 dark:bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-background/60 transition-all duration-300">
       <div className="container mx-auto px-4 flex h-20 items-center justify-between">
 
         {/* Mobile Menu Button */}
@@ -108,8 +109,9 @@ function Header() {
         {/* Right Actions */}
         <div className="flex items-center space-x-2">
 
-          {/* Search + Wishlist + Profile */}
+          {/* Search + Wishlist + Profile + Theme toggle */}
           <div className="flex items-center">
+            <ThemeToggle />
             <SearchBar attachRight />
 
             <Button
@@ -211,6 +213,7 @@ function Header() {
 
               <div className="flex items-center space-x-4 pt-4 border-t border-border">
                 <SearchBar />
+                <ThemeToggle />
               </div>
             </nav>
           </motion.div>

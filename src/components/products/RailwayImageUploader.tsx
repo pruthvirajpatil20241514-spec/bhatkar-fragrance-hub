@@ -133,12 +133,12 @@ export default function RailwayImageUploader({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg border border-gray-200">
+    <div className="w-full max-w-2xl mx-auto p-6 bg-card rounded-lg border border-border">
       <h2 className="text-2xl font-bold mb-6">Upload Product Images</h2>
 
       {/* Drop Zone */}
       <div
-        className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center mb-6 cursor-pointer hover:bg-gray-50 transition"
+        className="border-2 border-dashed border-border rounded-lg p-12 text-center mb-6 cursor-pointer hover:bg-muted/10 dark:hover:bg-gray-700 transition"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
@@ -149,11 +149,11 @@ export default function RailwayImageUploader({
         }}
         onClick={() => fileInputRef.current?.click()}
       >
-        <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <p className="text-gray-600 font-medium mb-2">
+        <Upload className="mx-auto h-12 w-12 text-muted-foreground/60 mb-4" />
+        <p className="text-muted-foreground font-medium mb-2">
           Drag and drop images here, or click to select
         </p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground/60">
           Maximum 4 images, 10MB each (JPG, PNG, GIF)
         </p>
         <input
@@ -169,14 +169,14 @@ export default function RailwayImageUploader({
       {/* File Previews */}
       {previews.length > 0 && (
         <div className="mb-6">
-          <h3 className="font-semibold text-gray-900 mb-4">
+          <h3 className="font-semibold text-foreground mb-4">
             Selected Images ({previews.length}/4)
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {previews.map((preview, index) => (
               <div
                 key={index}
-                className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
+                className="relative aspect-square rounded-lg overflow-hidden bg-muted/10 dark:bg-muted/20"
               >
                 <img
                   src={preview}
@@ -205,7 +205,7 @@ export default function RailwayImageUploader({
             <span className="text-sm font-medium">Uploading to Railway...</span>
             <span className="text-sm font-medium">{progress}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-muted/20 rounded-full h-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}

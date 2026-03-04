@@ -351,7 +351,7 @@ export default function AdminReviews() {
                   </div>
                   <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-6">
-                      <div className="h-20 w-20 rounded-2xl bg-white/10 backdrop-blur-md p-1 border border-white/20">
+                      <div className="h-20 w-20 rounded-2xl bg-white/10 dark:bg-white/20 backdrop-blur-md p-1 border border-white/20 dark:border-white/10">
                         <img
                           src={getImageUrl(selectedProduct?.images)}
                           alt={selectedProduct?.name}
@@ -366,11 +366,11 @@ export default function AdminReviews() {
                     </div>
 
                     <div className="flex gap-4">
-                      <div className="text-center bg-white/5 p-3 rounded-2xl min-w-[80px]">
+                      <div className="text-center bg-white/5 dark:bg-white/10 p-3 rounded-2xl min-w-[80px]">
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Reviews</p>
                         <p className="text-xl font-bold">{reviews.length}</p>
                       </div>
-                      <div className="text-center bg-white/5 p-3 rounded-2xl min-w-[80px]">
+                      <div className="text-center bg-white/5 dark:bg-white/10 p-3 rounded-2xl min-w-[80px]">
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Avg Rating</p>
                         <p className="text-xl font-bold">
                           {reviews.length > 0

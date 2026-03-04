@@ -36,11 +36,11 @@ export default function ProductImageCarousel({
 
   if (sortedImages.length === 0) {
     return (
-      <div className={`${className} bg-gray-100 rounded-lg aspect-square flex items-center justify-center`}>
+      <div className={`${className} bg-muted/10 dark:bg-muted/20 rounded-lg aspect-square flex items-center justify-center`}>
         <div className="text-center">
-          <div className="text-gray-400 text-6xl mb-4">📷</div>
-          <p className="text-gray-600">No images available</p>
-          <p className="text-sm text-gray-500">Images will appear here</p>
+          <div className="text-muted-foreground/60 text-6xl mb-4">📷</div>
+          <p className="text-muted-foreground">No images available</p>
+          <p className="text-sm text-muted-foreground/60">Images will appear here</p>
         </div>
       </div>
     );
@@ -66,7 +66,7 @@ export default function ProductImageCarousel({
   return (
     <div className={className}>
       {/* Main Image Display */}
-      <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-square mb-4">
+      <div className="relative bg-muted/10 dark:bg-muted/20 rounded-lg overflow-hidden aspect-square mb-4">
         <img
           src={sortedImages[0]?.image_url}
           alt={sortedImages[0]?.alt_text || productName}
@@ -92,7 +92,7 @@ export default function ProductImageCarousel({
           {/* Scroll Indicators */}
           {sortedImages.length > imagesPerFrame && (
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs text-gray-500 font-medium">
+              <span className="text-xs text-muted-foreground/60 font-medium">
                 {selectedIndex + 1}-{Math.min(selectedIndex + imagesPerFrame, sortedImages.length)} of{" "}
                 {sortedImages.length}
               </span>
@@ -131,7 +131,7 @@ export default function ProductImageCarousel({
                 className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
                   selectedIndex + index === 0
                     ? "border-orange-500 shadow-lg"
-                    : "border-gray-200 hover:border-gray-300"
+                    : "border-border hover:border-border/80"
                 }`}
               >
                 <img
@@ -152,7 +152,7 @@ export default function ProductImageCarousel({
 
           {/* Scrollbar Indicator */}
           {sortedImages.length > imagesPerFrame && (
-            <div className="w-full bg-gray-200 rounded-full h-1">
+            <div className="w-full bg-muted/20 rounded-full h-1">
               <div
                 className="bg-orange-500 h-1 rounded-full transition-all duration-300"
                 style={{
@@ -165,7 +165,7 @@ export default function ProductImageCarousel({
       )}
 
       {/* Loading State for Cloudinary URLs */}
-      <div className="mt-4 text-xs text-gray-500 flex items-center gap-2">
+      <div className="mt-4 text-xs text-muted-foreground/60 flex items-center gap-2">
         <div className="w-1 h-1 bg-green-500 rounded-full" />
         <span>Images stored on Railway Object Storage</span>
       </div>

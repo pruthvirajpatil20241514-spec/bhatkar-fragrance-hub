@@ -135,7 +135,7 @@ export default function ProductImageUploader({
   return (
     <div className="w-full space-y-4">
       {/* Upload Area */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-orange-500 transition-colors cursor-pointer"
+      <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-orange-500 transition-colors cursor-pointer"
         onClick={() => fileInputRef.current?.click()}>
         <input
           ref={fileInputRef}
@@ -147,15 +147,15 @@ export default function ProductImageUploader({
           disabled={uploading}
         />
 
-        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-        <p className="text-gray-600 font-medium">Click to select images or drag and drop</p>
-        <p className="text-sm text-gray-500">PNG, JPG, GIF up to 10MB each. Max 4 images.</p>
+        <Upload className="h-12 w-12 text-muted-foreground/60 mx-auto mb-2" />
+        <p className="text-muted-foreground font-medium">Click to select images or drag and drop</p>
+        <p className="text-sm text-muted-foreground/60">PNG, JPG, GIF up to 10MB each. Max 4 images.</p>
       </div>
 
       {/* Image Previews */}
       {selectedImages.length > 0 && (
         <div>
-          <h3 className="font-semibold text-gray-900 mb-3">
+          <h3 className="font-semibold text-foreground mb-3">
             Selected Images ({selectedImages.length}/4)
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -186,7 +186,7 @@ export default function ProductImageUploader({
 
       {/* Upload Progress */}
       {uploading && uploadProgress.overall !== undefined && (
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-muted/20 rounded-full h-2">
           <div
             className="bg-orange-500 h-2 rounded-full transition-all duration-300"
             style={{ width: `${uploadProgress.overall}%` }}
@@ -200,7 +200,7 @@ export default function ProductImageUploader({
           <button
             onClick={handleUpload}
             disabled={uploading}
-            className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+            className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-muted/40 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
           >
             {uploading ? (
               <>
@@ -217,7 +217,7 @@ export default function ProductImageUploader({
           <button
             onClick={() => setSelectedImages([])}
             disabled={uploading}
-            className="bg-gray-200 hover:bg-gray-300 disabled:bg-gray-400 text-gray-900 py-2 px-4 rounded-lg font-medium transition-colors"
+            className="bg-muted/20 hover:bg-muted/30 disabled:bg-muted/40 text-foreground py-2 px-4 rounded-lg font-medium transition-colors"
           >
             Clear
           </button>

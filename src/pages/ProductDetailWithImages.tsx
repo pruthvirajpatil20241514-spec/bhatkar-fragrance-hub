@@ -232,18 +232,18 @@ export default function ProductDetailWithImages() {
   return (
     <Layout>
       {/* Breadcrumb */}
-      <div className="bg-gray-50 py-4">
+      <div className="bg-background py-4">
         <div className="container px-4">
-          <nav className="flex items-center text-sm text-gray-600">
-            <Link to="/" className="hover:text-gray-900 transition-colors">
+          <nav className="flex items-center text-sm text-muted-foreground">
+            <Link to="/" className="hover:text-foreground transition-colors">
               Home
             </Link>
             <ChevronRight className="h-4 w-4 mx-2" />
-            <Link to="/shop" className="hover:text-gray-900 transition-colors">
+            <Link to="/shop" className="hover:text-foreground transition-colors">
               Shop
             </Link>
             <ChevronRight className="h-4 w-4 mx-2" />
-            <span className="text-gray-900 font-medium">{product.name}</span>
+            <span className="text-foreground font-medium">{product.name}</span>
           </nav>
         </div>
       </div>
@@ -266,11 +266,11 @@ export default function ProductDetailWithImages() {
               {/* Header */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
+                  <h1 className="text-3xl lg:text-4xl font-bold text-foreground">
                     {product.name}
                   </h1>
                 </div>
-                <p className="text-lg text-gray-600">{product.brand}</p>
+                <p className="text-lg text-muted-foreground">{product.brand}</p>
 
                 {/* Category & Type */}
                 <div className="flex gap-2 mt-4 flex-wrap">
@@ -298,7 +298,7 @@ export default function ProductDetailWithImages() {
               {/* ML/Variants Selector */}
               {(product as any).variants && (product as any).variants.length > 0 && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  <label className="block text-sm font-semibold text-foreground mb-3">
                     Size: {selectedVariant?.ml}
                     {selectedVariant?.unit}
                   </label>
@@ -322,34 +322,34 @@ export default function ProductDetailWithImages() {
 
               {/* Price */}
               <div>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-3xl font-bold text-foreground">
                   ₹{formatPrice(currentPrice)}
                 </p>
               </div>
 
               {/* Description */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-600 leading-relaxed">
+                <h3 className="font-semibold text-foreground mb-2">Description</h3>
+                <p className="text-muted-foreground leading-relaxed">
                   {product.description}
                 </p>
               </div>
 
               {/* Product Details */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600 font-semibold uppercase">
+                <div className="p-4 bg-card rounded-lg">
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">
                     Concentration
                   </p>
-                  <p className="text-lg font-semibold text-gray-900 mt-1">
+                  <p className="text-lg font-semibold text-foreground mt-1">
                     {product.concentration}
                   </p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600 font-semibold uppercase">
+                <div className="p-4 bg-card rounded-lg">
+                  <p className="text-xs text-muted-foreground font-semibold uppercase">
                     Stock
                   </p>
-                  <p className="text-lg font-semibold text-gray-900 mt-1">
+                  <p className="text-lg font-semibold text-foreground mt-1">
                     {product.stock} units
                   </p>
                 </div>
@@ -357,13 +357,13 @@ export default function ProductDetailWithImages() {
 
               {/* Quantity Selector */}
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-900">
+                <label className="block text-sm font-semibold text-foreground">
                   Quantity
                 </label>
-                <div className="flex items-center gap-4 bg-gray-100 rounded-lg p-2 w-fit">
+                <div className="flex items-center gap-4 bg-muted/10 dark:bg-muted/20 rounded-lg p-2 w-fit">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="p-2 hover:bg-gray-200 rounded-lg transition"
+                    className="p-2 hover:bg-muted/20 rounded-lg transition"
                   >
                     <Minus className="h-5 w-5" />
                   </button>
@@ -374,7 +374,7 @@ export default function ProductDetailWithImages() {
                     onClick={() =>
                       setQuantity(Math.min(currentStock, quantity + 1))
                     }
-                    className="p-2 hover:bg-gray-200 rounded-lg transition"
+                    className="p-2 hover:bg-muted/20 rounded-lg transition"
                     disabled={quantity >= currentStock}
                   >
                     <Plus className="h-5 w-5" />
@@ -412,28 +412,28 @@ export default function ProductDetailWithImages() {
                 <div className="flex items-start gap-3">
                   <Truck className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-foreground">
                       Free Delivery
                     </p>
-                    <p className="text-sm text-gray-600">Orders over $50</p>
+                    <p className="text-sm text-muted-foreground">Orders over $50</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <RotateCcw className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
                   <div>
-                    <p className="font-semibold text-gray-900">No Return Policy</p>
-                    <p className="text-sm text-gray-600">No returns accepted</p>
+                    <p className="font-semibold text-foreground">No Return Policy</p>
+                    <p className="text-sm text-muted-foreground">No returns accepted</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <Shield className="h-5 w-5 text-orange-500 flex-shrink-0 mt-1" />
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-foreground">
                       Secure Checkout
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       100% secure payment
                     </p>
                   </div>
@@ -446,7 +446,7 @@ export default function ProductDetailWithImages() {
 
       {/* Featured Reviews Section */}
       {featuredReviews.length > 0 && (
-        <section className="py-12 bg-gray-50">
+        <section className="py-12 bg-background">
           <div className="container px-4">
             <h2 className="text-3xl font-bold mb-8">Customer Reviews</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -456,7 +456,7 @@ export default function ProductDetailWithImages() {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  className="bg-white rounded-lg p-6 shadow-sm border border-gray-200"
+                  className="bg-card rounded-lg p-6 shadow-sm border border-border"
                 >
                   {/* Rating Stars */}
                   <div className="flex gap-1 mb-3">
@@ -465,20 +465,20 @@ export default function ProductDetailWithImages() {
                         key={i}
                         className={`h-4 w-4 ${i < review.rating
                           ? "fill-orange-400 text-orange-400"
-                          : "text-gray-300"
+                          : "text-muted-foreground/60"
                           }`}
                       />
                     ))}
                   </div>
 
                   {/* Review Text */}
-                  <p className="text-gray-700 mb-4 leading-relaxed">
+                  <p className="text-muted-foreground mb-4 leading-relaxed">
                     "{review.review_text}"
                   </p>
 
                   {/* Reviewer Info */}
                   <div className="flex items-center justify-between pt-4 border-t">
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-foreground">
                       {review.reviewer_name}
                     </span>
                     {review.verified_purchase && (

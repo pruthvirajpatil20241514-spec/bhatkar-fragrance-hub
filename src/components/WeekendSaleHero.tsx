@@ -65,7 +65,7 @@ export function WeekendSaleHero() {
             whileHover={{ scale: 1.05 }}
             className="flex flex-col items-center"
           >
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 sm:px-6 sm:py-4 text-xl sm:text-2xl md:text-4xl font-bold shadow-xl w-full">
+            <div className="bg-white/10 dark:bg-white/20 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl px-4 py-3 sm:px-6 sm:py-4 text-xl sm:text-2xl md:text-4xl font-bold shadow-xl w-full">
               {String(item.value).padStart(2, "0")}
             </div>
             <span className="mt-2 text-[10px] sm:text-xs uppercase tracking-widest text-neutral-400">

@@ -173,7 +173,7 @@ export function SearchBar(props: { attachRight?: boolean } = {}) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.98 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="absolute top-full left-0 right-0 md:left-auto md:right-0 md:w-[450px] mt-4 bg-white/90 backdrop-blur-2xl border border-primary/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-50 overflow-hidden"
+            className="absolute top-full left-0 right-0 md:left-auto md:right-0 md:w-[450px] mt-4 bg-white/90 dark:bg-background/90 backdrop-blur-2xl border border-primary/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-50 overflow-hidden"
           >
             <div className="p-4 border-b border-border/40 bg-secondary/20">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground px-2">

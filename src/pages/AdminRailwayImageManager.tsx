@@ -117,10 +117,10 @@ export default function AdminRailwayImageManager() {
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-4xl font-bold mb-2">{product.name}</h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {product.brand} • ${product.price}
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             {images.length} / 4 images uploaded
           </p>
         </div>
@@ -145,7 +145,7 @@ export default function AdminRailwayImageManager() {
                 {sortedImages.map((image, index) => (
                   <div
                     key={image.id}
-                    className="group relative bg-gray-100 rounded-lg overflow-hidden border border-gray-200 hover:border-orange-300 transition"
+                    className="group relative bg-muted/10 dark:bg-muted/20 rounded-lg overflow-hidden border border-border hover:border-orange-300 transition"
                   >
                     {/* Image */}
                     <img
@@ -173,7 +173,7 @@ export default function AdminRailwayImageManager() {
                           ★ Main
                         </div>
                       )}
-                      <div className="bg-gray-900 text-white px-2 py-1 rounded text-xs font-semibold">
+                      <div className="bg-charcoal text-white px-2 py-1 rounded text-xs font-semibold">
                         #{image.image_order}
                       </div>
                     </div>
@@ -181,7 +181,7 @@ export default function AdminRailwayImageManager() {
                     {/* Info */}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 text-white text-xs">
                       <p className="font-medium">{image.image_format}</p>
-                      <p className="text-gray-300">{image.alt_text}</p>
+                      <p className="text-muted-foreground/70">{image.alt_text}</p>
                     </div>
                   </div>
                 ))}
@@ -255,24 +255,24 @@ export default function AdminRailwayImageManager() {
         </div>
 
         {/* Footer Info */}
-        <div className="mt-12 p-6 bg-gray-50 rounded-lg border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-4">Storage Details:</h3>
+        <div className="mt-12 p-6 bg-card rounded-lg border border-border">
+          <h3 className="font-semibold text-foreground mb-4">Storage Details:</h3>
           <div className="grid md:grid-cols-3 gap-6">
             <div>
-              <p className="text-sm text-gray-600 font-medium">Storage Service</p>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-sm text-muted-foreground font-medium">Storage Service</p>
+              <p className="text-lg font-semibold text-foreground">
                 Railway Object Storage
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 font-medium">Images Uploaded</p>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-sm text-muted-foreground font-medium">Images Uploaded</p>
+              <p className="text-lg font-semibold text-foreground">
                 {images.length} / 4
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600 font-medium">URL Type</p>
-              <p className="text-lg font-semibold text-gray-900">Public</p>
+              <p className="text-sm text-muted-foreground font-medium">URL Type</p>
+              <p className="text-lg font-semibold text-foreground">Public</p>
             </div>
           </div>
         </div>

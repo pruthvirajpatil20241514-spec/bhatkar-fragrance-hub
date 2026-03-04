@@ -23,7 +23,7 @@ export default function Manage() {
     >
       <div className="space-y-6">
         {/* Sub-navigation Tabs */}
-        <div className="flex p-1 bg-white rounded-xl border border-border/50 w-fit">
+        <div className="flex p-1 bg-card rounded-xl border border-border/50 w-fit">
           <button
             onClick={() => navigate("/admin/manage/product")}
             className={cn(

@@ -126,7 +126,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
           <Star
             key={star}
             size={16}
-            className={star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+            className={star <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/60"}
           />
         ))}
       </div>
@@ -197,7 +197,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                     className={`cursor-pointer transition ${
                       star <= formData.rating
                         ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300 hover:text-yellow-200"
+                        : "text-muted-foreground/60 hover:text-yellow-200"
                     }`}
                   />
                 </button>
