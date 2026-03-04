@@ -88,3 +88,4 @@ exports.createShipmentForOrder = async (req, res, next) => {
 module.exports = {
   createShipmentForOrder,
   createShipmentInternal,
+};
